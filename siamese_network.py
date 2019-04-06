@@ -1,5 +1,6 @@
 import help_functions
 import numpy as np
+import os
 
 import tensorflow as tf
 from keras.models import Sequential
@@ -16,6 +17,8 @@ from keras.initializers import glorot_uniform, RandomNormal
 from keras import regularizers, backend
 
 import config
+
+import logging
 
 
 # optimal init values http://www.cs.utoronto.ca/~gkoch/files/msc-thesis.pdf
@@ -65,25 +68,28 @@ def get_image_pair_batch(people_count=10, folder=config.train_folder):
 def train():
     # Hyper-parameters
     people_count = 10
-    iterations = 20000
+    iterations = 100000
+    checkpoint = 100
+    save_checkpoint = 10000
 
     backend.clear_session()
     model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
+    f = open(os.path.join('model_history', 'perf.txt'), 'a')
     # print(model.summary())
-    for i in range(iterations):
+    for i in range(1, iterations+1):
         same, different = help_functions.get_image_pairs(config.train_folder, people_count)
         inputs, targets = help_functions.pairs_prepare(same, different)
         (loss, acc) = model.train_on_batch([inputs[0], inputs[1]], targets)
 
-        import random
-        i = random.randint(0, inputs.shape[1]-1)
-
-        print(model.predict_on_batch([[inputs[0][i]], [inputs[1][i]]]))
-        print('Loss: ' + str(loss))
-        print('Accuracy: ' + str(acc))
+        if i % checkpoint == 0:
+            print('Iteration: ' + str(i))
+            print('Loss: ' + str(loss))
+            print('Accuracy: ' + str(acc))
+            f.write(str(i) + ' ' + str(loss) + ' ' + str(acc) + '\n')
+        if i % save_checkpoint == 0:
+            model.save_weights(os.path.join('model_history', str(i) + 'FB.h5'))
+            logging.debug('model saved')
+    f.close()
 
 
 train()
-
-
-
