@@ -19,30 +19,23 @@ import config
 
 
 # optimal init values http://www.cs.utoronto.ca/~gkoch/files/msc-thesis.pdf
-def random_weights():
-    return RandomNormal(mean=0, stddev=0.01, seed=None)
-
-
-def random_bias():
-    return RandomNormal(mean=0.5, stddev=0.01, seed=None)
-
-
+# maybe change later
 def get_model(dimensions):
     network = Sequential()
     network.add(Conv2D(64, (10, 10), activation='relu', input_shape=dimensions,
-                kernel_initializer=random_weights(), kernel_regularizer=regularizers.l2(0.0002)))
+                kernel_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(MaxPooling2D())
-    network.add(Conv2D(128, (7, 7), activation='relu', kernel_initializer=random_weights(),
-                bias_initializer=random_bias(), kernel_regularizer=regularizers.l2(0.0002)))
+    network.add(Conv2D(128, (7, 7), activation='relu', kernel_initializer='random_uniform',
+                bias_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(MaxPooling2D())
-    network.add(Conv2D(128, (4, 4), activation='relu', kernel_initializer=random_weights(),
-                bias_initializer=random_bias(), kernel_regularizer=regularizers.l2(0.0002)))
+    network.add(Conv2D(128, (4, 4), activation='relu', kernel_initializer='random_uniform',
+                bias_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(MaxPooling2D())
-    network.add(Conv2D(256, (4, 4), activation='relu', kernel_initializer=random_weights(),
-                bias_initializer=random_bias(), kernel_regularizer=regularizers.l2(0.0002)))
+    network.add(Conv2D(256, (4, 4), activation='relu', kernel_initializer='random_uniform',
+                bias_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(Flatten())
     network.add(Dense(4096, activation='sigmoid', kernel_regularizer=regularizers.l2(0.001),
-                kernel_initializer=random_weights(), bias_initializer=random_bias()))
+                kernel_initializer='random_uniform', bias_initializer='random_uniform'))
 
     input1 = Input(dimensions)
     input2 = Input(dimensions)
@@ -70,21 +63,24 @@ def get_image_pair_batch(people_count=10, folder=config.train_folder):
 
 
 def train():
-    # RGB
-    model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
-    # print(model.summary())
-
     # Hyper-parameters
     people_count = 10
-    iterations = 200
+    iterations = 20000
 
+    backend.clear_session()
+    model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
+    # print(model.summary())
     for i in range(iterations):
         same, different = help_functions.get_image_pairs(config.train_folder, people_count)
         inputs, targets = help_functions.pairs_prepare(same, different)
         (loss, acc) = model.train_on_batch([inputs[0], inputs[1]], targets)
+
+        import random
+        i = random.randint(0, inputs.shape[1]-1)
+
+        print(model.predict_on_batch([[inputs[0][i]], [inputs[1][i]]]))
         print('Loss: ' + str(loss))
         print('Accuracy: ' + str(acc))
-
 
 
 train()

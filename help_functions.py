@@ -132,9 +132,15 @@ def get_image_pairs(path, n_person_id):
 
 
 # [picture1 or 2][pair index][dimensions of picture]
-def pairs_prepare(same, different):
+def pairs_prepare(same, different, balance=True):
     # connect same and different
+    if balance:
+        if same.shape[1] < different.shape[1]:
+            different = different[:, :same.shape[1], :, :, :]
+        elif same.shape[1] > different.shape[1]:
+            same = same[:, :different.shape[1], :, :, :]
     inputs = np.append(same, different, axis=1)
+    inputs = inputs / 255.0
     targets = np.concatenate((np.ones(same[0].shape[0]), np.zeros(different[0].shape[0])))
     return inputs, targets
 

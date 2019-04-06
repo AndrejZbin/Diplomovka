@@ -9,6 +9,8 @@ import os
 
 import logging
 
+from config import *
+
 
 # saves features of images to 'save_location' file
 # format: features... personID cameraID
@@ -80,18 +82,12 @@ def SILTP(image, threshold=0.3, neighbors=8, radius=1):
     return pattern
 
 
-if False:
-
+if True:
     train_images = help_functions.load_all_images(train_folder)
     save_features(train_images, train_output)
-
 
     test_images = help_functions.load_all_images(test_folder)
     save_features(test_images, test_output)
 
-
     query_images = help_functions.load_all_images(query_folder)
     save_features(query_images, query_output)
-
-
-

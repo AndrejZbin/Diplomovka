@@ -7,6 +7,9 @@ install requirements
 run download_dataset.py  
 run feature_extractor.py  
 run classification.py  
+
+optional:
+to use GPU for keras install cuda, cuDNN and uncomment requirements
   
 run ......
 
