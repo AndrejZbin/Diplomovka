@@ -81,18 +81,15 @@ def SILTP(image, threshold=0.3, neighbors=8, radius=1):
 
 
 if False:
-    train_folder = os.path.join('DukeMTMC-reID', 'bounding_box_train')
-    train_output = os.path.join('DukeMTMC-reID', 'train_features.txt')
+
     train_images = help_functions.load_all_images(train_folder)
     save_features(train_images, train_output)
 
-    test_folder = os.path.join('DukeMTMC-reID', 'bounding_box_test')
-    test_output = os.path.join('DukeMTMC-reID', 'test_features.txt')
+
     test_images = help_functions.load_all_images(test_folder)
     save_features(test_images, test_output)
 
-    query_folder = os.path.join('DukeMTMC-reID', 'query')
-    query_output = os.path.join('DukeMTMC-reID', 'query_features.txt')
+
     query_images = help_functions.load_all_images(query_folder)
     save_features(query_images, query_output)
 
