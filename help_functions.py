@@ -45,7 +45,7 @@ saved_images = {}
 
 # returns list of tuples containing loaded images and their file name
 def load_all_images(path, file_type='.jpg', preprocess=identity):
-    key = path + '#' + file_type
+    key = path + '#' + file_type + '#' + str(id(preprocess))
     images = saved_images.get(key)
     if images is None:
         images = fetch_images(path, file_type, preprocess)
@@ -57,7 +57,11 @@ def load_all_images(path, file_type='.jpg', preprocess=identity):
 
 
 def load_image(path, file, preprocess=identity):
-    image = cv2.imread(os.path.join(path, file), cv2.IMREAD_COLOR)
+    if file.lower().endswith('.pgm'):
+        image = cv2.imread(os.path.join(path, file), -1)
+        image = np.expand_dims(image, axis=2)
+    else:
+        image = cv2.imread(os.path.join(path, file), cv2.IMREAD_COLOR)
     image = preprocess(image)
     return image, file
 
@@ -110,7 +114,7 @@ def get_image_pairs(images, n_person_id):
     # tuples of different people
     different = [[], []]
 
-    info = np.empty(images.shape[0], dtype=object)
+    info = np.empty((len(images), 3), dtype=object)
     i = 0
     # info: person_id, camera_id, file_name
     for image, file in images:

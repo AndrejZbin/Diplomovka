@@ -65,7 +65,7 @@ def get_image_pair_batch(people_count=10, folder=config.train_folder):
         yield inputs, targets
 
 
-def train():
+def train_body():
     train_images = help_functions.load_all_images(config.train_folder, preprocess=help_functions.resize)
 
     # Hyper-parameters
@@ -94,4 +94,33 @@ def train():
     f.close()
 
 
-train()
+def train_face():
+    train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm', preprocess=help_functions.identity)
+
+
+    # Hyper-parameters
+    people_count = 10
+    iterations = 100000
+    checkpoint = 20
+    save_checkpoint = 20000
+
+    backend.clear_session()
+    model = get_model((config.face_resize[1], config.face_resize[0], 1))
+    f = open(os.path.join('model_history', 'perf.txt'), 'a')
+    # print(model.summary())
+    for i in range(1, iterations+1):
+        same, different = help_functions.get_image_pairs(train_images, people_count)
+        inputs, targets = help_functions.pairs_prepare(same, different)
+        (loss, acc) = model.train_on_batch([inputs[0], inputs[1]], targets)
+        if i % checkpoint == 0:
+            print('Iteration: ' + str(i))
+            print('Loss: ' + str(loss))
+            print('Accuracy: ' + str(acc))
+            f.write(str(i) + ' ' + str(loss) + ' ' + str(acc) + '\n')
+        if i % save_checkpoint == 0:
+            model.save_weights(os.path.join('model_history', str(i) + 'F.h5'))
+            logging.debug('model saved')
+    f.close()
+
+
+train_face()
