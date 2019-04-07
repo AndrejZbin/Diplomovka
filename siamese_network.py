@@ -66,10 +66,12 @@ def get_image_pair_batch(people_count=10, folder=config.train_folder):
 
 
 def train():
+    train_images = help_functions.load_all_images(config.train_folder, preprocess=help_functions.resize)
+
     # Hyper-parameters
     people_count = 10
-    iterations = 100000
-    checkpoint = 100
+    iterations = 60000
+    checkpoint = 20
     save_checkpoint = 10000
 
     backend.clear_session()
@@ -77,7 +79,7 @@ def train():
     f = open(os.path.join('model_history', 'perf.txt'), 'a')
     # print(model.summary())
     for i in range(1, iterations+1):
-        same, different = help_functions.get_image_pairs(config.train_folder, people_count)
+        same, different = help_functions.get_image_pairs(train_images, people_count)
         inputs, targets = help_functions.pairs_prepare(same, different)
         (loss, acc) = model.train_on_batch([inputs[0], inputs[1]], targets)
 

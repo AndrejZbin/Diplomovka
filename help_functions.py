@@ -8,14 +8,34 @@ import random
 
 from config import test_folder, train_folder, body_image_resize
 
+import retinex
+
+
+def resize_and_retinex(image):
+    image = cv2.resize(image, body_image_resize)
+    image = retinex.automatedMSRCR(
+        image,
+        [15, 80, 250]
+    )
+    return image
+
+
+def resize(image):
+    image = cv2.resize(image, body_image_resize)
+    return image
+
+
+def identity(image):
+    return image
+
 
 # fetches image from location
 # returns tuple containing loaded image and its file name
-def fetch_images(path, file_type='.jpg'):
+def fetch_images(path, file_type='.jpg', preprocess=identity):
     result = []
     for file in os.listdir(path):
         if file.endswith(file_type) and os.path.isfile(os.path.join(path, file)):
-            image, _ = load_image(path, file)
+            image, _ = load_image(path, file, preprocess)
             result.append((image, file),)
     return result
 
@@ -24,11 +44,11 @@ saved_images = {}
 
 
 # returns list of tuples containing loaded images and their file name
-def load_all_images(path, file_type='.jpg'):
+def load_all_images(path, file_type='.jpg', preprocess=identity):
     key = path + '#' + file_type
     images = saved_images.get(key)
     if images is None:
-        images = fetch_images(path, file_type)
+        images = fetch_images(path, file_type, preprocess)
         saved_images[key] = images
         logging.debug('Images loaded from path')
     else:
@@ -36,19 +56,18 @@ def load_all_images(path, file_type='.jpg'):
     return images
 
 
-def load_image(path, file, resize=body_image_resize):
+def load_image(path, file, preprocess=identity):
     image = cv2.imread(os.path.join(path, file), cv2.IMREAD_COLOR)
-    if resize is not None:
-        image = cv2.resize(image, resize)
+    image = preprocess(image)
     return image, file
 
 
 # files <- iterable, contains names of images to load
-def load_images(path, files):
+def load_images(path, files, preprocess=identity):
     result = []
     for file in files:
         if os.path.isfile(os.path.join(path, file)):
-            image = load_image(path, file)
+            image = load_image(path, file, preprocess)
             result.append(image)
     logging.debug('Specified images loaded (' + str(len(result)) + ')')
     return result
@@ -85,16 +104,13 @@ def load_data(file):
 # for 1 photo of person A
 # select 1 photo of A from each camera
 # select 1 photo of random person that is not A from each camera
-def get_image_pairs(path, n_person_id):
+def get_image_pairs(images, n_person_id):
     # tuples of same people
     same = [[], []]
     # tuples of different people
     different = [[], []]
 
-    images = load_all_images(path)
-
-    files = os.listdir(path)
-    info = np.empty((len(files), 3), dtype=object)
+    info = np.empty(images.shape[0], dtype=object)
     i = 0
     # info: person_id, camera_id, file_name
     for image, file in images:
@@ -114,17 +130,20 @@ def get_image_pairs(path, n_person_id):
     # for each person find him in each camera and find another person in each camera and make pairs
     for person_id in unique_ids:
         same_id = info[info[:, 0] == person_id]
+        # get random image of person_id person
         person_image = same_id[random.randint(0, same_id.shape[0] - 1)][2]
         for camera in cameras:
             match = same_id[same_id[:, 1] == camera]
             if len(match) == 0:
                 continue
+            # get random image of person_id person from camera camera
             same_person_image = match[random.randint(0, match.shape[0] - 1)][2]
             same[0].append(person_image)
             same[1].append(same_person_image)
             diff = info[(info[:, 0] != person_id) & (info[:, 1] == camera)]
             if len(diff) == 0:
                 continue
+            # get random image of another person from camera camera
             different_person_image = diff[random.randint(0, diff.shape[0] - 1)][2]
             different[0].append(person_image)
             different[1].append(different_person_image)

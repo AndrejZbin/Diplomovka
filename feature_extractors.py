@@ -83,11 +83,11 @@ def SILTP(image, threshold=0.3, neighbors=8, radius=1):
 
 
 if True:
-    train_images = help_functions.load_all_images(train_folder)
+    train_images = help_functions.load_all_images(train_folder, preprocess=help_functions.resize_and_retinex)
     save_features(train_images, train_output)
 
-    test_images = help_functions.load_all_images(test_folder)
+    test_images = help_functions.load_all_images(test_folder, preprocess=help_functions.resize_and_retinex)
     save_features(test_images, test_output)
 
-    query_images = help_functions.load_all_images(query_folder)
+    query_images = help_functions.load_all_images(query_folder, preprocess=help_functions.resize_and_retinex)
     save_features(query_images, query_output)
