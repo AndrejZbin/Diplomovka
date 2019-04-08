@@ -100,7 +100,7 @@ def train_face():
 
     # Hyper-parameters
     people_count = 10
-    iterations = 100000
+    iterations = 80000
     checkpoint = 20
     save_checkpoint = 20000
 
