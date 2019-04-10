@@ -79,9 +79,8 @@ def train_body():
     f = open(os.path.join('model_history', 'perf.txt'), 'a')
     # print(model.summary())
     for i in range(1, iterations+1):
-        same, different = help_functions.get_image_pairs(train_images, people_count)
-        inputs, targets = help_functions.pairs_prepare(same, different)
-        (loss, acc) = model.train_on_batch([inputs[0], inputs[1]], targets)
+        inputs, targets = help_functions.get_image_pairs(train_images, people_count)
+        (loss, acc) = model.train_on_batch(inputs, targets)
 
         if i % checkpoint == 0:
             print('Iteration: ' + str(i))
@@ -109,9 +108,8 @@ def train_face():
     f = open(os.path.join('model_history', 'perf.txt'), 'a')
     # print(model.summary())
     for i in range(1, iterations+1):
-        same, different = help_functions.get_image_pairs(train_images, people_count)
-        inputs, targets = help_functions.pairs_prepare(same, different)
-        (loss, acc) = model.train_on_batch([inputs[0], inputs[1]], targets)
+        inputs, targets = help_functions.get_image_pairs(train_images, people_count)
+        (loss, acc) = model.train_on_batch(inputs, targets)
         if i % checkpoint == 0:
             print('Iteration: ' + str(i))
             print('Loss: ' + str(loss))
@@ -123,4 +121,30 @@ def train_face():
     f.close()
 
 
-train_face()
+def test_body(model_file):
+    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize)
+    model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
+    model.load_weights(filepath=model_file)
+
+    print('body')
+    for i in range(10):
+        inputs, targets = help_functions.get_image_pairs(test_images, 10)
+
+        result = model.test_on_batch(inputs, targets)
+        print(result)
+
+
+def test_face(model_file):
+    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.identity)
+    model = get_model((config.face_resize[1], config.face_resize[0], 1))
+    model.load_weights(filepath=model_file)
+    print('face')
+    for i in range(10):
+        inputs, targets = help_functions.get_image_pairs(test_images, 10)
+
+        result = model.test_on_batch(inputs, targets)
+        print(result)
+
+
+test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
+test_face(os.path.join('computed_data', 'face', '80000F.h5'))
