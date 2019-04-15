@@ -4,6 +4,10 @@ sklearn
 pafy
 keras
 tensorflow
+imutils
+cmake
+dlib
+
 
 # feel free to use newer version if your hardware supports it and have enough time to waste trying to solve driver collisions
 # works with cuda 9.0 with cuDNN 7.0.5

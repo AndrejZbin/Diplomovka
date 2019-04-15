@@ -1,8 +1,19 @@
 import numpy as np
 
+import cv2
+
+from imutils.object_detection import non_max_suppression
+
+descriptor = cv2.HOGDescriptor()
+descriptor.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+
 
 def detect_body(image):
-    pass
+    rectangles, weights = descriptor.detectMultiScale(
+        image, winStride=(4, 4), padding=(0, 0), scale=1.05, hitThreshold=1)
+    rectangles = np.array([[x + 0.05*w, y + 0.05*h, x + 0.95*w, y + 0.95*h] for x, y, w, h in rectangles])
+    rectangles = non_max_suppression(rectangles, probs=None, overlapThresh=0.65)
+    return rectangles
 
 
 def detect_face(image):

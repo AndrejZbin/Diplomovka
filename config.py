@@ -16,3 +16,5 @@ chokepoint_full = os.path.join(chokepoint, 'full')
 
 body_image_resize = (65, 155)
 face_resize = (96, 96)
+
+sample_size = 16

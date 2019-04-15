@@ -18,13 +18,14 @@ class Playback:
 
 
 class PicturePlayback(Playback):
-    def __init__(self, captures, framerate=30):
+    def __init__(self, captures, framerate=30, each_frame=True):
         self.captures = captures
         self.framerate = framerate
         self.frametime = (1000/self.framerate)
         self.start_time = None
-        self.previous_index = None
+        self.previous_index = -1
         self.frame = None
+        self.each_frame = each_frame
 
     def start(self):
         self.start_time = int(round(time.time() * 1000))
@@ -35,6 +36,8 @@ class PicturePlayback(Playback):
     def get_frame(self):
         time_diff = (int(round(time.time() * 1000)) - self.start_time)
         frame_index = int(time_diff/self.frametime)
+        if self.each_frame and frame_index > self.previous_index + 1:
+            frame_index = self.previous_index + 1
         if frame_index != self.previous_index:
             if frame_index >= len(self.captures):
                 self.stop()
