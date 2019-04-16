@@ -17,4 +17,12 @@ chokepoint_full = os.path.join(chokepoint, 'full')
 body_image_resize = (65, 155)
 face_resize = (96, 96)
 
-sample_size = 16
+sample_size = 8
+
+detect_frequency = 30
+
+body_model = os.path.join('computed_data', 'body', '60000FB.h5')
+face_model = os.path.join('computed_data', 'face', '80000F.h5')
+
+net_proto = os.path.join('mobilenet_ssd', 'MobileNetSSD_deploy.prototxt')
+net_model = os.path.join('mobilenet_ssd', 'MobileNetSSD_deploy.caffemodel')

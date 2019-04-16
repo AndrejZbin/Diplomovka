@@ -146,5 +146,6 @@ def test_face(model_file):
         print(result)
 
 
-test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
-test_face(os.path.join('computed_data', 'face', '80000F.h5'))
+backend.clear_session()
+# test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
+# test_face(os.path.join('computed_data', 'face', '80000F.h5'))
