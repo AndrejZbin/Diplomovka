@@ -76,26 +76,26 @@ def detect_face(image):
 
 
 def compare_body(image1, image2):
-    return compare_body_to_bodies(image1, [image2])[0]
+    return compare_body_to_bodies(image1, np.array([image2]))[0]
 
 
 def compare_body_to_bodies(image, images, names=None):
     if len(images) == 0:
         return [0]
-    match = body_model.predict_on_batch(_build_compare(image, images))
+    match = body_model.predict_on_batch(_build_compare(image/255.0, images/255.0))
     if names is None:
         return match
     return get_name(match, names)
 
 
 def compare_face(image1, image2):
-    return compare_face_to_faces(image1, [image2])[0]
+    return compare_face_to_faces(image1, np.array([image2]))[0]
 
 
 def compare_face_to_faces(image, images, names=None):
     if len(images) == 0:
         return [0]
-    match = face_model.predict_on_batch(_build_compare(image, images))
+    match = face_model.predict_on_batch(_build_compare(image/255.0, images/255.0))
     if names is None:
         return match
     return get_name(match, names)

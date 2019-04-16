@@ -134,6 +134,19 @@ def test_body(model_file):
         print(result)
 
 
+def test_body_oneshot(model_file, iterations=10, versus=4):
+    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize)
+    model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
+    model.load_weights(filepath=model_file)
+
+    matched = 0
+    for i in range(iterations):
+        inputs, targets = help_functions.get_oneshot_pair(test_images, versus)
+        result = model.predict_on_batch(inputs)
+        matched += np.argmax(result) == np.argmax(targets)
+    print('Oneshot body:', float(matched)/float(iterations), 'vs', versus)
+
+
 def test_face(model_file):
     test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.identity)
     model = get_model((config.face_resize[1], config.face_resize[0], 1))
@@ -146,6 +159,23 @@ def test_face(model_file):
         print(result)
 
 
-backend.clear_session()
-# test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
-# test_face(os.path.join('computed_data', 'face', '80000F.h5'))
+def test_face_oneshot(model_file, iterations=10, versus=4):
+    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.identity)
+    model = get_model((config.face_resize[1], config.face_resize[0], 1))
+    model.load_weights(filepath=model_file)
+
+    matched = 0
+    for i in range(iterations):
+        inputs, targets = help_functions.get_oneshot_pair(test_images, versus)
+        result = model.predict_on_batch(inputs)
+        matched += np.argmax(result) == np.argmax(targets)
+    print('Oneshot face:', float(matched)/float(iterations), 'vs', versus)
+
+
+if __name__ == '__main__':
+    backend.clear_session()
+    # test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
+    # test_face(os.path.join('computed_data', 'face', '80000F.h5'))
+
+    test_body_oneshot(os.path.join('computed_data', 'body', '60000FB.h5'), 100, 16)
+    test_face_oneshot(os.path.join('computed_data', 'face', '80000F.h5'), 100, 16)
