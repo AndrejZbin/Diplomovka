@@ -63,23 +63,11 @@ def detect_people(image):
     # loop over the detections
     rectangles = []
     for i in np.arange(0, detections.shape[2]):
-        # extract the confidence (i.e., probability) associated
-        # with the prediction
         confidence = detections[0, 0, i, 2]
-
-        # filter out weak detections by requiring a minimum
-        # confidence
-        if confidence >= 0.5:
-            # extract the index of the class label from the
-            # detections list
+        if confidence >= config.detect_body_confidence:
             idx = int(detections[0, 0, i, 1])
-
-            # if the class label is not a person, ignore it
             if CLASSES[idx] != 'person':
                 continue
-
-            # compute the (x, y)-coordinates of the bounding box
-            # for the object
             box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
             x1, y1, x2, y2 = box.astype("int")
             rectangles.append((x1, y1, x2, y2),)

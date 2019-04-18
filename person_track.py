@@ -8,7 +8,7 @@ import api_functions
 
 
 class PersonTrack:
-    def __init__(self, person_id, n_cameras):
+    def __init__(self, person_id, n_cameras, add_samples=True):
         self.history = [[] for _ in range(n_cameras)]
         self.id = person_id
         self.name = None
@@ -23,6 +23,8 @@ class PersonTrack:
 
         self.n_cameras = n_cameras
         self.reided = False
+
+        self.add_samples = add_samples
 
     def _add_sample(self, array, array_time, image, time, camera):
         start_index = config.sample_size*camera
@@ -50,13 +52,16 @@ class PersonTrack:
     def add_location(self, camera, location):
         self.history[camera].append(location)
 
-    def add_body_sample(self, image, time, camera):
-        image = api_functions.prepare_body(image)
-        self._add_sample(self.body_samples, self.body_samples_times, image, time, camera)
+    # if adding of samples is allowed, this image will be added even if it's older than all saved pictures
+    def add_body_sample(self, image, time, camera, force_add=False):
+        if self.add_samples or force_add:
+            image = api_functions.prepare_body(image)
+            self._add_sample(self.body_samples, self.body_samples_times, image, time, camera)
 
-    def add_face_sample(self, image, time,  camera):
-        image = api_functions.prepare_face(image)
-        self._add_sample(self.face_samples, self.face_samples_times, image, time, camera)
+    def add_face_sample(self, image, time, camera, force_add=False):
+        if self.add_samples or force_add:
+            image = api_functions.prepare_face(image)
+            self._add_sample(self.face_samples, self.face_samples_times, image, time, camera)
 
     def get_name(self):
         return self.name or ('UNKNOWN ID: ' + str(self.id))

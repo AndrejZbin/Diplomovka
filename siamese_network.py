@@ -66,7 +66,7 @@ def get_image_pair_batch(people_count=10, folder=config.train_folder):
 
 
 def train_body():
-    train_images = help_functions.load_all_images(config.train_folder, preprocess=help_functions.resize)
+    train_images = help_functions.load_all_images(config.train_folder, preprocess=help_functions.resize_body)
 
     # Hyper-parameters
     people_count = 10
@@ -94,7 +94,7 @@ def train_body():
 
 
 def train_face():
-    train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm', preprocess=help_functions.identity)
+    train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm', preprocess=help_functions.resize_face)
 
 
     # Hyper-parameters
@@ -122,7 +122,7 @@ def train_face():
 
 
 def test_body(model_file):
-    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize)
+    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize_body)
     model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
     model.load_weights(filepath=model_file)
 
@@ -135,7 +135,7 @@ def test_body(model_file):
 
 
 def test_body_oneshot(model_file, iterations=10, versus=4):
-    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize)
+    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize_body)
     model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
     model.load_weights(filepath=model_file)
 
@@ -148,7 +148,7 @@ def test_body_oneshot(model_file, iterations=10, versus=4):
 
 
 def test_face(model_file):
-    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.identity)
+    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.resize_face)
     model = get_model((config.face_resize[1], config.face_resize[0], 1))
     model.load_weights(filepath=model_file)
     print('face')
@@ -160,7 +160,7 @@ def test_face(model_file):
 
 
 def test_face_oneshot(model_file, iterations=10, versus=4):
-    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.identity)
+    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.resize_face)
     model = get_model((config.face_resize[1], config.face_resize[0], 1))
     model.load_weights(filepath=model_file)
 
@@ -177,5 +177,5 @@ if __name__ == '__main__':
     # test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
     # test_face(os.path.join('computed_data', 'face', '80000F.h5'))
 
-    test_body_oneshot(os.path.join('computed_data', 'body', '60000FB.h5'), 100, 16)
+    # test_body_oneshot(os.path.join('computed_data', 'body', '60000FB.h5'), 100, 16)
     test_face_oneshot(os.path.join('computed_data', 'face', '80000F.h5'), 100, 16)

@@ -6,7 +6,7 @@ import numpy as np
 import logging
 import random
 
-from config import test_folder, train_folder, body_image_resize
+from config import test_folder, train_folder, body_image_resize, face_resize
 
 import retinex
 
@@ -16,7 +16,7 @@ def unzip(arr):
     return r[0], r[1]
 
 
-def resize_and_retinex(image):
+def resize_and_retinex_body(image):
     image = cv2.resize(image, body_image_resize)
     image = retinex.automatedMSRCR(
         image,
@@ -25,8 +25,13 @@ def resize_and_retinex(image):
     return image
 
 
-def resize(image):
+def resize_body(image):
     image = cv2.resize(image, body_image_resize)
+    return image
+
+
+def resize_face(image):
+    image = cv2.resize(image, face_resize)
     return image
 
 

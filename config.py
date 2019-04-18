@@ -14,6 +14,8 @@ chokepoint_cropped_train = os.path.join(chokepoint, 'cropped_train')
 chokepoint_cropped_test = os.path.join(chokepoint, 'cropped_test')
 chokepoint_full = os.path.join(chokepoint, 'full')
 
+att_faces = 'att_faces'
+
 body_image_resize = (65, 155)
 face_resize = (96, 96)
 
@@ -26,3 +28,5 @@ face_model = os.path.join('computed_data', 'face', '80000F.h5')
 
 net_proto = os.path.join('mobilenet_ssd', 'MobileNetSSD_deploy.prototxt')
 net_model = os.path.join('mobilenet_ssd', 'MobileNetSSD_deploy.caffemodel')
+
+detect_body_confidence = 0.1

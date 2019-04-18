@@ -17,6 +17,24 @@ def duke():
     logging.debug('DukeMTMC ready')
 
 
+def att():
+    url = 'http://www.cl.cam.ac.uk/Research/DTG/attarchive/pub/data/att_faces.zip'
+    r = requests.get(url)
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    z.extractall(config.att_faces)
+    logging.debug('ATT ready')
+
+    for path, subdirs, files in os.walk('att_faces'):
+        for file in files:
+            full_path = os.path.join(path, file)
+            if os.path.isfile(full_path) and file.endswith('.pgm'):
+                match = re.search('\\W+s([0-9]+)\\W+([0-9]+).pgm$', full_path)
+                person, frame = match.group(1), match.group(2)
+                filename = person + '_c1_f' + frame + '.pgm'
+                os.rename(full_path, os.path.join(config.att_faces, filename))
+
+
+
 # takes a lot of time to download and extract :(
 def chokepoint():
     chokepoint_files = [
@@ -82,7 +100,7 @@ def chokepoint():
             t.extractall(path=tmp2)
 
     # moves files and renames them to same pattern as duke
-
+    move_prepare_files(tmp1, config.chokepoint_cropped_train, config.chokepoint_cropped_test, '.pgm', decide_train)
 
     logging.debug('ChokePoint ready')
 
@@ -128,4 +146,7 @@ def move_prepare_files(from_path, to_path_train, to_path_test, file_type, decisi
                     os.rename(full_path, os.path.join(to_path_test, filename))
 
 
-move_prepare_files(tmp1, config.chokepoint_cropped_train, config.chokepoint_cropped_test, '.pgm', decide_train)
+att()
+
+
+
