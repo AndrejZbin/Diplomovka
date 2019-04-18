@@ -97,18 +97,20 @@ def init():
                 else:
                     need_reid = need_reid and not person_track.was_reided()
                 if should_sample:
-                    person_track.add_body_sample(cropped_body, camera_i)
+                    person_track.add_body_sample(cropped_body, frame_index, camera_i)
                     face = api_functions.get_face(cropped_body)
                     if face is not None:
-                        person_track.add_face_sample(face, camera_i)
+                        person_track.add_face_sample(face, frame_index, camera_i)
                 if need_reid:
                     same_person_id = api_functions.compare_to_detected(person_track, tracked_objects)
                     if same_person_id is not None and same_person_id != track_id:
+                        same_person_track = tracked_objects.get(same_person_id)
+                        same_person_track.merge(person_track)
                         del tracked_objects[track_id]
                         tracked_objects_reid[track_id] = same_person_id
                         print(track_id, same_person_id)
                         track_id = same_person_id
-                        person_track = tracked_objects.get(track_id)
+                        person_track = same_person_track
                         person_track.reid()
                     elif same_person_id == track_id:  # this is an error and should never happened if everything is OK
                         print('ERROR comparing to same person ' + str(track_id))
