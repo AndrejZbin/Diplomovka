@@ -29,4 +29,8 @@ face_model = os.path.join('computed_data', 'face', '80000F.h5')
 net_proto = os.path.join('mobilenet_ssd', 'MobileNetSSD_deploy.prototxt')
 net_model = os.path.join('mobilenet_ssd', 'MobileNetSSD_deploy.caffemodel')
 
-detect_body_confidence = 0.1
+detect_body_confidence = 0.25
+
+keep_track_all = False
+keep_track_targeted = True
+keep_track_targeted_files = 'known_people'

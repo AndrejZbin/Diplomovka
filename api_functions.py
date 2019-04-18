@@ -36,7 +36,8 @@ def prepare_face(image):
     #     [15, 80, 250]
     # )
     image = cv2.resize(image, config.face_resize)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image = np.expand_dims(image, axis=2)
     return image
 

@@ -13,6 +13,8 @@ import retinex
 
 def unzip(arr):
     r = [list(t) for t in zip(*arr)]
+    if len(r) != 2:
+        return [], []
     return r[0], r[1]
 
 
@@ -44,7 +46,7 @@ def identity(image):
 def fetch_images(path, file_type='.jpg', preprocess=identity):
     result = []
     for file in os.listdir(path):
-        if file.endswith(file_type) and os.path.isfile(os.path.join(path, file)):
+        if (file.endswith(file_type) or file_type == '') and os.path.isfile(os.path.join(path, file)):
             image, _ = load_image(path, file, preprocess)
             result.append((image, file),)
     return result

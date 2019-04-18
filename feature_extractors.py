@@ -82,7 +82,7 @@ def SILTP(image, threshold=0.3, neighbors=8, radius=1):
     return pattern
 
 
-if  __name__ == '__main__':
+if __name__ == '__main__':
     train_images = help_functions.load_all_images(train_folder, preprocess=help_functions.resize_and_retinex_body)
     save_features(train_images, train_output)
 

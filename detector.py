@@ -3,6 +3,11 @@ import os
 
 import feature_extractors as fe
 
+import help_functions
+
+import re
+import math
+
 import dlib
 from centroid_tracker import CentroidTracker
 from person_track import PersonTrack
@@ -20,6 +25,37 @@ tracked_objects = {}
 # id from tracker -> id of person
 tracked_objects_reid = {}
 
+cams = ['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1']
+
+
+def build_known_people():
+    images = help_functions.load_all_images(config.keep_track_targeted_files, file_type='')
+    name_to_id = {}
+    next_id = -1
+    cameras = len(cams)
+    for image, file in images:
+        match = re.search('([fFbB])_([a-zA-Z0-9 ]+)(_.*)?', file)
+        if match is None:
+            continue
+        # cv2.imshow('dsfgdfg', image)
+        # cv2.waitKey()
+        name = match.group(2)
+        track_id, count = name_to_id.get(name, (None, 0))
+        if track_id is None:
+            track_id = next_id
+            next_id -= 1
+        track = tracked_objects.get(track_id, None)
+        if track is None:
+            track = PersonTrack(track_id, cameras)
+            track.reid()  # just to be sure
+            track.idenify(name)
+            tracked_objects[track_id] = track
+
+        if match.group(1).lower() == 'f':  # face
+            track.add_face_sample(image, math.inf, count % cameras, True)
+        elif match.group(1).lower() == 'b':  # body
+            track.add_body_sample(image, math.inf, count % cameras, True)
+
 
 # get trackers from rectangles and image
 def build_trackers(rectangles, image):
@@ -33,7 +69,6 @@ def build_trackers(rectangles, image):
 
 
 def init():
-    cams = ['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1']
     img_list_paths = list(map(lambda c: os.path.join(c, 'all_file.txt'), cams))
     print(img_list_paths)
 
@@ -90,7 +125,8 @@ def init():
                 cropped_body = frame[y1:y2, x1:x2]
                 need_reid = should_reid
                 if person_track is None:
-                    print('NEW PERSON DETECTED, CAMERA ' + str(camera_i))
+                    if should_detect:  # so its not spammed when we dont keep track of all people
+                        print('NEW PERSON DETECTED, CAMERA ' + str(camera_i))
                     person_track = PersonTrack(track_id, len(cams))
                     tracked_objects[track_id] = person_track
                     need_reid = True  # check whether we have seen this person before
@@ -114,10 +150,14 @@ def init():
                         person_track.reid()
                     elif same_person_id == track_id:  # this is an error and should never happened if everything is OK
                         print('ERROR comparing to same person ' + str(track_id))
+                    # we do not keep track of this person, delete him
+                    # TODO: creating the instance is quite unnecessary, but not 'that' costly...
+                    if not config.keep_track_all and not person_track.is_known():
+                        del tracked_objects[track_id]
 
+                cv2.rectangle(frames[camera_i], (x1, y1), (x2, y2), (255, 0, 0), 1)
                 cv2.putText(frame, person_track.get_name(), (x1, y1),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                cv2.rectangle(frames[camera_i], (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
             cv2.imshow('Camera ' + str(camera_i), frames[camera_i])
 
@@ -129,4 +169,8 @@ def init():
 
     cv2.destroyAllWindows()
 
-init()
+
+if __name__ == '__main__':
+    if config.keep_track_targeted:
+        build_known_people()
+    init()

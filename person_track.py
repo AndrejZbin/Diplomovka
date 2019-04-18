@@ -64,6 +64,8 @@ class PersonTrack:
             self._add_sample(self.face_samples, self.face_samples_times, image, time, camera)
 
     def get_name(self):
+        if not config.keep_track_all:
+            return self.name or 'UNKNOWN'
         return self.name or ('UNKNOWN ID: ' + str(self.id))
 
     def get_body_samples(self):
