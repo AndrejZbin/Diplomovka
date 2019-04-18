@@ -1,7 +1,9 @@
 import cv2
 import os
+import time
 
 import feature_extractors as fe
+import queue
 
 import dlib
 from centroid_tracker import CentroidTracker
@@ -13,12 +15,40 @@ from playback import *
 
 import config
 
+import threading
+
 import numpy as np
 
 # saved information about detected people, key=ID, value=person_track instance
 tracked_objects = {}
 # id from tracker -> id of person
 tracked_objects_reid = {}
+
+cams = ['P2E_S4_C1.1', 'P2E_S4_C2.1']#, 'P2E_S3_C3.1']
+
+job = threading.Event()
+job.set()
+results = [[] for _ in cams]
+
+same_person_job = queue.Queue()
+same_person_result = queue.Queue()
+
+
+
+def same_person():
+    while True:
+        track = same_person_job.get(block=True)
+        same_id = api_functions.compare_to_detected(track, tracked_objects)
+        while not same_person_result.empty():
+            time.sleep(1)
+        same_person_result.put((same_id, track.get_id()))
+
+
+
+def parallel_detect(frames):
+    for i, f in enumerate(frames):
+        results[i] = api_functions.detect_people(f)
+    job.set()
 
 
 # get trackers from rectangles and image
@@ -33,7 +63,9 @@ def build_trackers(rectangles, image):
 
 
 def init():
-    cams = ['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1']
+    t_s = threading.Thread(name='detect', target=same_person, args=())
+    t_s.start()
+
     img_list_paths = list(map(lambda c: os.path.join(c, 'all_file.txt'), cams))
     print(img_list_paths)
 
@@ -62,12 +94,13 @@ def init():
         for camera_i, frame in enumerate(frames):
             # rectangles of detected people in current frame
             people = []
-            should_detect = (frame_index % config.detect_frequency == 0)
+            should_detect = (job.is_set())  # (frame_index % config.detect_frequency == 0)
             should_sample = (frame_index % config.detect_frequency == 0)
             should_reid = (frame_index % config.detect_frequency == 0)
             if should_detect:
-                # detect rectangles
-                people = api_functions.detect_people(frame)
+                # get result
+                people = results[camera_i]
+                # people = api_functions.detect_people(frame)
                 correlation_trackers[camera_i] = build_trackers(people, frame)
             else:
                 # track rectangles
@@ -102,24 +135,30 @@ def init():
                     if face is not None:
                         person_track.add_face_sample(face, frame_index, camera_i)
                 if need_reid:
-                    same_person_id = api_functions.compare_to_detected(person_track, tracked_objects)
-                    if same_person_id is not None and same_person_id != track_id:
-                        same_person_track = tracked_objects.get(same_person_id)
-                        same_person_track.merge(person_track)
-                        del tracked_objects[track_id]
-                        tracked_objects_reid[track_id] = same_person_id
-                        print(track_id, same_person_id)
-                        track_id = same_person_id
-                        person_track = same_person_track
-                        person_track.reid()
-                    elif same_person_id == track_id:  # this is an error and should never happened if everything is OK
-                        print('ERROR comparing to same person ' + str(track_id))
+                    same_person_job.put(person_track)
 
                 cv2.putText(frame, person_track.get_name(), (x1, y1),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                 cv2.rectangle(frames[camera_i], (x1, y1), (x2, y2), (0, 255, 0), 2)
 
             cv2.imshow('Camera ' + str(camera_i), frames[camera_i])
+
+        while not same_person_result.empty():
+            same_person_id, track_id = same_person_result.get()
+            if same_person_id is not None and same_person_id != track_id:
+                person_track = tracked_objects.get(track_id)
+                same_person_track = tracked_objects.get(same_person_id)
+                same_person_track.merge(person_track)
+                same_person_track.reid()
+                del tracked_objects[track_id]
+                tracked_objects_reid[track_id] = same_person_id
+                print(track_id, same_person_id)
+            elif same_person_id == track_id:  # this is an error and should never happened if everything is OK
+                print('ERROR comparing to same person ' + str(track_id))
+        if job.is_set():
+            job.clear()
+            t = threading.Thread(name='detect', target=parallel_detect, args=(frames,))
+            t.start()
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
