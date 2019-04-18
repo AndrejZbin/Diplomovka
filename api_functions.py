@@ -7,6 +7,7 @@ from imutils.object_detection import non_max_suppression
 import siamese_network
 
 import config
+import retinex
 
 descriptor = cv2.HOGDescriptor()
 descriptor.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
@@ -29,7 +30,27 @@ CLASSES = ('background',
             'sheep', 'sofa', 'train', 'tvmonitor')
 
 
-def detect_body(image):
+def prepare_face(image):
+    # image = retinex.automatedMSRCR(
+    #     image,
+    #     [15, 80, 250]
+    # )
+    image = cv2.resize(image, config.face_resize)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = np.expand_dims(image, axis=2)
+    return image
+
+
+def prepare_body(image):
+    image = retinex.automatedMSRCR(
+        image,
+        [15, 80, 250]
+    )
+    image = cv2.resize(image, config.body_image_resize)
+    return image
+
+
+def detect_people(image):
     # rectangles, weights = descriptor.detectMultiScale(
     #     image, winStride=(4, 4), padding=(0, 0), scale=1.05, hitThreshold=1)
     # rectangles = np.array([[x + 0.05*w, y + 0.05*h, x + 0.95*w, y + 0.95*h] for x, y, w, h in rectangles])
@@ -41,7 +62,6 @@ def detect_body(image):
     detections = net.forward()
     # loop over the detections
     rectangles = []
-    faces = []
     for i in np.arange(0, detections.shape[2]):
         # extract the confidence (i.e., probability) associated
         # with the prediction
@@ -66,7 +86,7 @@ def detect_body(image):
     return rectangles
 
 
-def detect_face(image):
+def detect_faces(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     faces = face_descriptor.detectMultiScale(gray,
@@ -75,30 +95,56 @@ def detect_face(image):
     return faces
 
 
-def compare_body(image1, image2):
+def get_face(image):
+    faces = detect_faces(image)
+    if len(faces) == 1:
+        fx1, fy1, fx2, fy2 = faces[0]
+        return image[fy1:fy2, fx1:fx2]
+    return None
+
+
+def compare_body_to_body(image1, image2):
     return compare_body_to_bodies(image1, np.array([image2]))[0]
 
 
-def compare_body_to_bodies(image, images, names=None):
+def compare_body_to_bodies(image, images):
     if len(images) == 0:
-        return [0]
+        return np.array([0])
     match = body_model.predict_on_batch(_build_compare(image/255.0, images/255.0))
-    if names is None:
-        return match
-    return get_name(match, names)
+    return match
+
+
+def compare_bodies_to_bodies(bodies1, bodies2):
+    match = []
+    bodies1 = bodies1 / 255.0
+    bodies2 = bodies2 / 255.0
+    if len(bodies1) == 0 or len(bodies2) == 0:
+        return np.array([[0]])
+    for body in bodies1:
+        match.append(body_model.predict_on_batch(_build_compare(body, bodies2)))
+    return np.array(match)
 
 
 def compare_face(image1, image2):
     return compare_face_to_faces(image1, np.array([image2]))[0]
 
 
-def compare_face_to_faces(image, images, names=None):
+def compare_face_to_faces(image, images):
     if len(images) == 0:
-        return [0]
+        return np.array([0])
     match = face_model.predict_on_batch(_build_compare(image/255.0, images/255.0))
-    if names is None:
-        return match
-    return get_name(match, names)
+    return match
+
+
+def compare_faces_to_faces(faces1, faces2):
+    match = []
+    faces1 = faces1 / 255.0
+    faces2 = faces2 / 255.0
+    if len(faces1) == 0 or len(faces2) == 0:
+        return np.array([[0]])
+    for face in faces1:
+        match.append(face_model.predict_on_batch(_build_compare(face, faces2)))
+    return np.array(match)
 
 
 def _build_compare(image, images):
@@ -109,49 +155,41 @@ def _build_compare(image, images):
 
 
 def get_name(match, names):
-    return names[np.argmax(match)]
+    if not names or len(names) == 0:
+        return None, 0
+    return names[np.argmax(match)], np.max(match)
 
 
-def compare_to_detected(my_id, cropped_body, trackableObjects):
-    import retinex
-    cropped_body = retinex.automatedMSRCR(
-        cropped_body,
-        [15, 80, 250]
-    )
+def compare_to_detected(candidate_track, saved_objects):
 
-    face = detect_face(cropped_body)
-    if len(face) == 1:
-        fx1, fy1, fx2, fy2 = face[0]
-        face = cv2.cvtColor(cropped_body[fy1:fy2, fx1:fx2], cv2.COLOR_BGR2GRAY)
-        face = cv2.resize(face, config.face_resize)
-        face = np.expand_dims(face, axis=2)
-    else:
-        face = None
-
-    cropped_body = cv2.resize(cropped_body, config.body_image_resize)
+    # for each saved object get all samples and compare them to candidate samples and average results,
+    # then select the largest average match and return id of that object
 
     # try to match by face
-    if face is not None:
-        match_face = np.array([np.mean(compare_face_to_faces(face, person.get_face_samples())) for key, person in trackableObjects.items() if key != my_id])
-        cv2.imshow('Camera', face)
-        cv2.waitKey()
-        if len(match_face) > 0:
-            largest_index = np.argmax(match_face)
-            if match_face[largest_index] >= 0.9:
-                print('Matched by FACE')
-                return list(trackableObjects.keys())[largest_index]
+    match_face = np.array([
+        np.max(
+            np.mean(np.mean(compare_faces_to_faces(candidate_track.get_face_samples(), person_track.get_face_samples()), axis=1))
+        )
+        for person_id, person_track in saved_objects.items() if person_id != candidate_track.get_id()])
+    if len(match_face) > 0:
+        largest_index = int(np.argmax(match_face))
+        if match_face[largest_index] >= 0.90:
+            print('Matched by FACE ' + str(int(match_face[largest_index]*10000)/100.0))
+            return list(filter(lambda k: k != candidate_track.get_id(), saved_objects.keys()))[largest_index]
 
-    # try to match by body
+    match_body = np.array([
+        np.max(
+            np.mean(np.mean(compare_bodies_to_bodies(candidate_track.get_body_samples(), person_track.get_body_samples()), axis=1))
+        )
+        for person_id, person_track in saved_objects.items() if person_id != candidate_track.get_id()
+    ])
 
-    # for each object get all samples and compare them to cropped_body and average results, then select the largest average match and return id of that object
-    match = np.array([np.mean(compare_body_to_bodies(cropped_body, person.get_body_samples())) for key, person in trackableObjects.items() if key != my_id])
-
-    if len(match) == 0:
+    if len(match_body) == 0:
         return None
-    largest_index = np.argmax(match)
-    if match[largest_index] >= 0.9:
-        print('Matched by BODY')
-        return list(trackableObjects.keys())[largest_index]
+    largest_index = int(np.argmax(match_body))
+    if match_body[largest_index] >= 0.90:
+        print('Matched by BODY ' + str(int(match_body[largest_index]*10000)/100.0))
+        return list(filter(lambda k: k != candidate_track.get_id(), saved_objects.keys()))[largest_index]
     return None  # no match found
 
 

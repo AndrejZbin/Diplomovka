@@ -11,6 +11,11 @@ from config import test_folder, train_folder, body_image_resize
 import retinex
 
 
+def unzip(arr):
+    r = [list(t) for t in zip(*arr)]
+    return r[0], r[1]
+
+
 def resize_and_retinex(image):
     image = cv2.resize(image, body_image_resize)
     image = retinex.automatedMSRCR(
