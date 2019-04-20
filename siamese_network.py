@@ -4,8 +4,8 @@ import os
 
 import tensorflow as tf
 from keras.models import Sequential
-from keras.optimizers import Adam
-from keras.layers import Conv2D, ZeroPadding2D, Activation, Input, concatenate
+from keras.optimizers import Adam, RMSprop
+from keras.layers import Conv2D, ZeroPadding2D, Activation, Input, concatenate, Dropout
 from keras.models import Model
 
 from keras.layers.normalization import BatchNormalization
@@ -23,17 +23,21 @@ import logging
 
 # optimal init values http://www.cs.utoronto.ca/~gkoch/files/msc-thesis.pdf
 # maybe change later
-def get_model(dimensions):
+# if loss is NAN first couple of iterations, restart
+def get_face_model(dimensions):
     network = Sequential()
     network.add(Conv2D(64, (10, 10), activation='relu', input_shape=dimensions,
                 kernel_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(MaxPooling2D())
+    network.add(Dropout(.15))
     network.add(Conv2D(128, (7, 7), activation='relu', kernel_initializer='random_uniform',
                 bias_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(MaxPooling2D())
+    network.add(Dropout(.15))
     network.add(Conv2D(128, (4, 4), activation='relu', kernel_initializer='random_uniform',
                 bias_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(MaxPooling2D())
+    network.add(Dropout(.15))
     network.add(Conv2D(256, (4, 4), activation='relu', kernel_initializer='random_uniform',
                 bias_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
     network.add(Flatten())
@@ -52,16 +56,20 @@ def get_model(dimensions):
     prediction = Dense(1, activation='sigmoid')(l1_distance)
     siamese_net = Model(inputs=[input1, input2], outputs=prediction)
 
+
     optimizer = Adam(0.001, decay=2.5e-4)
     siamese_net.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
     return siamese_net
 
 
+def get_body_model(dimensions):
+    return get_face_model(dimensions)
+
+
 def get_image_pair_batch(people_count=10, folder=config.train_folder):
     while True:
-        same, different = help_functions.get_image_pairs(folder, people_count)
-        inputs, targets = help_functions.pairs_prepare(same, different)
+        inputs, targets = help_functions.get_image_pairs(folder, people_count)
         yield inputs, targets
 
 
@@ -90,18 +98,20 @@ def train_body():
         if i % save_checkpoint == 0:
             model.save_weights(os.path.join('model_history', str(i) + 'FB.h5'))
             logging.debug('model saved')
+    model.save_weights(os.path.join('model_history', 'base_body_weights.h5'))
     f.close()
 
 
 def train_face():
-    train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm', preprocess=help_functions.resize_face)
-
+    #train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm', preprocess=help_functions.resize_face)
+    train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm',
+                                                  preprocess=help_functions.random_resize_face)
 
     # Hyper-parameters
-    people_count = 10
+    people_count = 8
     iterations = 80000
     checkpoint = 20
-    save_checkpoint = 20000
+    save_checkpoint = 10000
 
     backend.clear_session()
     model = get_model((config.face_resize[1], config.face_resize[0], 1))
@@ -118,12 +128,14 @@ def train_face():
         if i % save_checkpoint == 0:
             model.save_weights(os.path.join('model_history', str(i) + 'F.h5'))
             logging.debug('model saved')
+            f.flush()
+    model.save_weights(os.path.join('model_history', 'base_face_weights.h5'))
     f.close()
 
 
 def test_body(model_file):
     test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize_body)
-    model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
+    model = get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
     model.load_weights(filepath=model_file)
 
     print('body')
@@ -136,7 +148,7 @@ def test_body(model_file):
 
 def test_body_oneshot(model_file, iterations=10, versus=4):
     test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize_body)
-    model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
+    model = get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
     model.load_weights(filepath=model_file)
 
     matched = 0
@@ -149,7 +161,7 @@ def test_body_oneshot(model_file, iterations=10, versus=4):
 
 def test_face(model_file):
     test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.resize_face)
-    model = get_model((config.face_resize[1], config.face_resize[0], 1))
+    model = get_face_model((config.face_resize[1], config.face_resize[0], 1))
     model.load_weights(filepath=model_file)
     print('face')
     for i in range(10):
@@ -161,7 +173,7 @@ def test_face(model_file):
 
 def test_face_oneshot(model_file, iterations=10, versus=4):
     test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.resize_face)
-    model = get_model((config.face_resize[1], config.face_resize[0], 1))
+    model = get_face_model((config.face_resize[1], config.face_resize[0], 1))
     model.load_weights(filepath=model_file)
 
     matched = 0
@@ -174,8 +186,9 @@ def test_face_oneshot(model_file, iterations=10, versus=4):
 
 if __name__ == '__main__':
     backend.clear_session()
+    # train_face()
     # test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
-    # test_face(os.path.join('computed_data', 'face', '80000F.h5'))
+    test_face(config.base_face_model)
 
     # test_body_oneshot(os.path.join('computed_data', 'body', '60000FB.h5'), 100, 16)
-    test_face_oneshot(os.path.join('computed_data', 'face', '80000F.h5'), 100, 16)
+    test_face_oneshot(config.base_face_model, 100, 16)

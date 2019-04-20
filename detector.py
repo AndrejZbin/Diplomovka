@@ -29,7 +29,7 @@ cams = ['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1']
 
 
 def build_known_people():
-    images = help_functions.load_all_images(config.keep_track_targeted_files, file_type='')
+    images = help_functions.load_all_images(config.keep_track_targeted_files, '', help_functions.resize_face)
     name_to_id = {}
     next_id = -1
     cameras = len(cams)
@@ -37,8 +37,8 @@ def build_known_people():
         match = re.search('([fFbB])_([a-zA-Z0-9 ]+)(_.*)?', file)
         if match is None:
             continue
-        # cv2.imshow('dsfgdfg', image)
-        # cv2.waitKey()
+        cv2.imshow(file, image)
+        cv2.waitKey()
         name = match.group(2)
         track_id, count = name_to_id.get(name, (None, 0))
         if track_id is None:
@@ -80,7 +80,7 @@ def init():
     # players = [YoutubePlayback('https://www.youtube.com/watch?v=N79f1znMWQ8')]
 
     # centroid tracker for each camera to keep track of IDs after new detection
-    centroid_tracker = [CentroidTracker(0, 100) for _ in range(len(cams))]
+    centroid_tracker = [CentroidTracker(0, 200) for _ in range(len(cams))]
     correlation_trackers = [[] for _ in range(len(cams))]
 
     for player in players:
@@ -96,6 +96,7 @@ def init():
         # current frame for each camera
         for camera_i, frame in enumerate(frames):
             # rectangles of detected people in current frame
+            frame_copy = frame.copy()
             people = []
             should_detect = (frame_index % config.detect_frequency == 0)
             should_sample = (frame_index % config.detect_frequency == 0)
@@ -129,6 +130,7 @@ def init():
                         print('NEW PERSON DETECTED, CAMERA ' + str(camera_i))
                     person_track = PersonTrack(track_id, len(cams))
                     tracked_objects[track_id] = person_track
+                    should_sample = True
                     need_reid = True  # check whether we have seen this person before
                 else:
                     need_reid = need_reid and not person_track.was_reided()
@@ -155,13 +157,13 @@ def init():
                     if not config.keep_track_all and not person_track.is_known():
                         del tracked_objects[track_id]
 
-                cv2.rectangle(frames[camera_i], (x1, y1), (x2, y2), (255, 0, 0), 1)
-                cv2.putText(frame, person_track.get_name(), (x1, y1),
+                cv2.rectangle(frame_copy, (x1, y1), (x2, y2), (255, 0, 0), 1)
+                cv2.putText(frame_copy, person_track.get_name(), (x1, y1),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-            cv2.imshow('Camera ' + str(camera_i), frames[camera_i])
+            cv2.imshow('Camera ' + str(camera_i), frame_copy)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1)  == ord('q'):
             break
 
         frame_index += 1

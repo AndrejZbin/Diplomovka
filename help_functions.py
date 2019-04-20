@@ -37,6 +37,13 @@ def resize_face(image):
     return image
 
 
+def random_resize_face(image):
+    r = random.randint(32, 96)
+    image = cv2.resize(image, (r, r))
+    image = cv2.resize(image, face_resize)
+    return image
+
+
 def identity(image):
     return image
 
@@ -71,10 +78,11 @@ def load_all_images(path, file_type='.jpg', preprocess=identity):
 def load_image(path, file, preprocess=identity):
     if file.lower().endswith('.pgm'):
         image = cv2.imread(os.path.join(path, file), -1)
-        image = np.expand_dims(image, axis=2)
     else:
         image = cv2.imread(os.path.join(path, file), cv2.IMREAD_COLOR)
     image = preprocess(image)
+    if len(image.shape) == 2:
+        image = np.expand_dims(image, axis=2)
     return image, file
 
 

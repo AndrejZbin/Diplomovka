@@ -29,8 +29,8 @@ def att():
             full_path = os.path.join(path, file)
             if os.path.isfile(full_path) and file.endswith('.pgm'):
                 match = re.search('\\W+s([0-9]+)\\W+([0-9]+).pgm$', full_path)
-                person, frame = match.group(1), match.group(2)
-                filename = person + '_c1_f' + frame + '.pgm'
+                person, camera = match.group(1), match.group(2)
+                filename = person + '_c' + camera + '_f1.pgm'
                 os.rename(full_path, os.path.join(config.att_faces, filename))
 
 
