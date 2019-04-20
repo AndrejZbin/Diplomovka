@@ -83,8 +83,8 @@ def train_body():
     save_checkpoint = 10000
 
     backend.clear_session()
-    model = get_model((config.body_image_resize[1], config.body_image_resize[0], 3))
-    f = open(os.path.join('model_history', 'perf.txt'), 'a')
+    model = get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
+    f = open(os.path.join('model_history', 'body_perf.txt'), 'a')
     # print(model.summary())
     for i in range(1, iterations+1):
         inputs, targets = help_functions.get_image_pairs(train_images, people_count)
@@ -114,8 +114,8 @@ def train_face():
     save_checkpoint = 10000
 
     backend.clear_session()
-    model = get_model((config.face_resize[1], config.face_resize[0], 1))
-    f = open(os.path.join('model_history', 'perf.txt'), 'a')
+    model = get_face_model((config.face_resize[1], config.face_resize[0], 1))
+    f = open(os.path.join('model_history', 'face_perf.txt'), 'a')
     # print(model.summary())
     for i in range(1, iterations+1):
         inputs, targets = help_functions.get_image_pairs(train_images, people_count)

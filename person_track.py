@@ -23,6 +23,8 @@ class PersonTrack:
 
         self.body_full_images = []
         self.face_full_images = []
+        self.body_full_images_info = []
+        self.face_full_images_info = []
 
         self.n_cameras = n_cameras
         self.reided = False
@@ -61,6 +63,7 @@ class PersonTrack:
     def add_body_sample(self, image, time, camera, force_add=False):
         if config.keep_full_samples:
             self.body_full_images.append(image)
+            self.body_full_images_info.append((time, camera))
         if self.add_samples or force_add:
             image = api_functions.prepare_body(image)
             self._add_sample(self.body_samples, self.body_samples_times, image, time, camera)
@@ -68,6 +71,7 @@ class PersonTrack:
     def add_face_sample(self, image, time, camera, force_add=False):
         if config.keep_full_samples:
             self.face_full_images.append(image)
+            self.face_full_images_info.append((time, camera))
         if self.add_samples or force_add:
             image = api_functions.prepare_face(image)
             self._add_sample(self.face_samples, self.face_samples_times, image, time, camera)

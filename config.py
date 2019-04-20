@@ -9,6 +9,9 @@ test_output = os.path.join('DukeMTMC-reID', 'test_features.txt')
 query_folder = os.path.join('DukeMTMC-reID', 'query')
 query_output = os.path.join('DukeMTMC-reID', 'query_features.txt')
 
+improve_folder = 'builded_dataset'
+improve_camera_groups = ['group1']
+
 chokepoint = 'ChokePoint'
 chokepoint_cropped_train = os.path.join(chokepoint, 'cropped_train')
 chokepoint_cropped_test = os.path.join(chokepoint, 'cropped_test')
@@ -44,6 +47,8 @@ keep_track_targeted_files = 'known_people'
 
 learning_start = True
 learning_improving = False
+
+build_dataset = True
 
 avoid_false_positives = False
 
