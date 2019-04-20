@@ -85,7 +85,7 @@ class PersonTrack:
     def get_name(self):
         if not config.keep_track_all:
             return self.name or 'UNKNOWN'
-        return self.name or ('UNKNOWN ID: ' + str(self.id))
+        return self.name or ('ID: ' + str(self.id))
 
     def get_body_samples(self):
         return self.body_samples[self.body_samples_times >= 1]

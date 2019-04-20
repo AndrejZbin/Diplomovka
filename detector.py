@@ -254,16 +254,35 @@ def build_new_dataset(group_name):
             face = faces[i]
             frame, camera = faces_info[i]
             # make filename matching other dataset's filenames
-            file_name = str(track_id) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
+            filename = str(track_id) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
             # finally save image
-            cv2.imwrite(os.path.join(path, 'faces', file_name), face)
+            cv2.imwrite(os.path.join(path, 'faces', filename), face)
         for i in range(len(bodies)):
             body = bodies[i]
             frame, camera = bodies_info[i]
             # make filename matching other dataset's filenames
-            file_name = str(track_id) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
+            filename = str(track_id) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
             # finally save image
-            cv2.imwrite(os.path.join(path, 'bodies', file_name), body)
+            cv2.imwrite(os.path.join(path, 'bodies', filename), body)
+
+
+# fix dataset by matching different IDs, check manually, also delete manually bad files
+def fix_built_dataset():
+    while True:
+        r = input('Fix from to: ')
+        r = r.split(' ')
+        if len(r) != 2:
+            break
+        try:
+            f, t = int(r[0]), int(r[1])
+        except ValueError:
+            break
+        for path, subdirs, files in os.walk(config.improve_folder):
+            for file in files:
+                person_id, camera, frame = help_functions.info_from_image_name(file)
+                if person_id == f:
+                    filename = str(t) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
+                    os.rename(os.path.join(path, file), os.path.join(path, filename))
 
 
 # TODO: DRY, code is repeated for faces and bodies
@@ -354,7 +373,9 @@ def improve_bodies():
 
 if __name__ == '__main__':
     playback()
+
     # finally we begin learning on newly collected information
     if config.learning_improving or config.learning_start:
+        fix_built_dataset()
         improve_faces()
         improve_bodies()
