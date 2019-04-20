@@ -50,6 +50,12 @@ class PersonTrack:
         self.face_samples[replacing] = same_person.face_samples[replacing]
         self.face_samples_times[replacing] = same_person.face_samples_times[replacing]
 
+        # connect full image samples
+        self.body_full_images = self.body_full_images + same_person.body_full_images
+        self.face_full_images = self.face_full_images + same_person.face_full_images
+        self.body_full_images_info = self.body_full_images_info + same_person.body_full_images_info
+        self.face_full_images_info = self.face_full_images_info + same_person.face_full_images_info
+
     def is_known(self):
         return self.name is not None
 

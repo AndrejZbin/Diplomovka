@@ -20,10 +20,10 @@ body_model = siamese_network.get_body_model((config.body_image_resize[1], config
 face_model = siamese_network.get_face_model((config.face_resize[1], config.face_resize[0], 1))
 
 if config.learning_start:
-    body_model.load_weights(filepath=config.base_body_mode)
+    body_model.load_weights(filepath=config.base_body_model)
     face_model.load_weights(filepath=config.base_face_model)
 elif config.learning_improving or config.production:
-    body_model.load_weights(filepath=config.improved_body_mode)
+    body_model.load_weights(filepath=config.improved_body_model)
     face_model.load_weights(filepath=config.improved_face_model)
 
 CLASSES = ('background',

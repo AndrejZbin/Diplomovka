@@ -34,6 +34,9 @@ def resize_body(image):
 
 def resize_face(image):
     image = cv2.resize(image, face_resize)
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = np.expand_dims(image, axis=2)
     return image
 
 
@@ -118,9 +121,9 @@ def load_data(file):
     if data is None:
         data = fetch_data(file)
         saved_data[key] = data
-        logging.debug('Data loaded from path')
+        logging.debug('LOADING: Data loaded from path')
     else:
-        logging.debug('Data loaded from memory')
+        logging.debug('LOADING: Data loaded from memory')
     return data
 
 
@@ -185,8 +188,14 @@ def get_image_pairs(images, n_person_id, balance=True):
             different = different[:, :same.shape[1], :, :, :]
         elif same.shape[1] > different.shape[1]:
             same = same[:, :different.shape[1], :, :, :]
+
+    if different.shape == 0:
+        logging.error('BUILDING PAIRS: cannot create pairs because there is 0 different people')
+        raise FileNotFoundError()
+
     inputs = np.append(same, different, axis=1)
     inputs = inputs / 255.0
+
     targets = np.concatenate((np.ones(same[0].shape[0]), np.zeros(different[0].shape[0])))
     return [inputs[0], inputs[1]], targets
 
@@ -197,7 +206,7 @@ def get_image_pairs(images, n_person_id, balance=True):
 def get_oneshot_pair(images, n_person_id):
     info, unique_ids = _build_info(images, n_person_id)
     search_for = unique_ids[random.randint(0, unique_ids.shape[0] - 1)]
-    # TODO: optimize to use numpy arrays
+    # TODO: maybe optimize to use numpy arrays
     images1 = []
     images2 = []
     targets = []

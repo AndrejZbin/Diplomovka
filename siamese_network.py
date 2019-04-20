@@ -21,9 +21,6 @@ import config
 import logging
 
 
-# optimal init values http://www.cs.utoronto.ca/~gkoch/files/msc-thesis.pdf
-# maybe change later
-# if loss is NAN first couple of iterations, restart
 def get_face_model(dimensions):
     network = Sequential()
     network.add(Conv2D(64, (10, 10), activation='relu', input_shape=dimensions,
@@ -55,7 +52,6 @@ def get_face_model(dimensions):
 
     prediction = Dense(1, activation='sigmoid')(l1_distance)
     siamese_net = Model(inputs=[input1, input2], outputs=prediction)
-
 
     optimizer = Adam(0.001, decay=2.5e-4)
     siamese_net.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
