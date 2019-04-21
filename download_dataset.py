@@ -9,6 +9,7 @@ import random
 
 import config
 
+
 def duke():
     url = 'http://vision.cs.duke.edu/DukeMTMC/data/misc/DukeMTMC-reID.zip'
     r = requests.get(url)
@@ -34,29 +35,28 @@ def att():
                 os.rename(full_path, os.path.join(config.att_faces, filename))
 
 
-
 # takes a lot of time to download and extract :(
 def chokepoint():
     chokepoint_files = [
         # download these for full frames to play as video
-        # 'P1E_S1.tar.xz',
-        # 'P1E_S2.tar.xz',
-        # 'P1E_S3.tar.xz',
-        # 'P1E_S4.tar.xz',
-        # 'P1L_S1.tar.xz',
-        # 'P1L_S2.tar.xz',
-        # 'P1L_S3.tar.xz',
-        # 'P1L_S4.tar.xz',
-        # 'P2E_S1.tar.xz',
-        # 'P2E_S2.tar.xz',
-        # 'P2E_S3.tar.xz',
-        # 'P2E_S4.tar.xz',
-        # 'P2E_S5.tar.xz',
-        # 'P2L_S1.tar.xz',
-        # 'P2L_S2.tar.xz',
-        # 'P2L_S3.tar.xz',
-        # 'P2L_S4.tar.xz',
-        # 'P2L_S5.tar.xz',
+        'P1E_S1.tar.xz',
+        'P1E_S2.tar.xz',
+        'P1E_S3.tar.xz',
+        'P1E_S4.tar.xz',
+        'P1L_S1.tar.xz',
+        'P1L_S2.tar.xz',
+        'P1L_S3.tar.xz',
+        'P1L_S4.tar.xz',
+        'P2E_S1.tar.xz',
+        'P2E_S2.tar.xz',
+        'P2E_S3.tar.xz',
+        'P2E_S4.tar.xz',
+        'P2E_S5.tar.xz',
+        'P2L_S1.tar.xz',
+        'P2L_S2.tar.xz',
+        'P2L_S3.tar.xz',
+        'P2L_S4.tar.xz',
+        'P2L_S5.tar.xz',
         # cropped faces for training
         'P1E.tar.xz',
         'P1L.tar.xz',
@@ -105,9 +105,6 @@ def chokepoint():
     logging.debug('ChokePoint ready')
 
 
-tmp1 = os.path.join(config.chokepoint, 'tmp1')
-tmp2 = os.path.join(config.chokepoint, 'tmp2')
-
 helper = {
     'P1E': 0,
     'P1L': 1,
@@ -118,7 +115,7 @@ helper = {
 }
 
 
-def decide_train(person, place, seq, camera):
+def decide_train(person, place, _, camera):
     if person in [4, 5, 7]:
         return False
     if place == 'P1E':
@@ -137,16 +134,19 @@ def move_prepare_files(from_path, to_path_train, to_path_test, file_type, decisi
         for file in files:
             full_path = os.path.join(path, file)
             if os.path.isfile(full_path) and file.endswith(file_type):
-                match = re.search('(P[0-9][LE])_S([0-9]+)_C([0-9]+)\\W+([0-9]+)\\W+([0-9]+)' + file_type + '$', full_path)
-                place, seq, cam, person, frame = match.group(1), match.group(2), match.group(3), match.group(4), match.group(5)
-                filename = person + '_c' + str(int(cam) + helper[place]*helper['num_cams']) + '_f' + str(int(frame) + (int(seq) - 1) * helper['max_frames']) + file_type
-                if decide_train(person, place, seq, cam):
+                m = re.search(
+                    '(P[0-9][LE])_S([0-9]+)_C([0-9]+)\\W+([0-9]+)\\W+([0-9]+)' + file_type + '$', full_path)
+                place, seq, cam, person, frame = m.group(1), m.group(2),  m.group(3), m.group(4), m.group(5)
+                filename = person + '_c' + str(int(cam) + helper[place]*helper['num_cams']) + \
+                                    '_f' + str(int(frame) + (int(seq) - 1) * helper['max_frames']) + \
+                                    file_type
+                if decision_f(person, place, seq, cam):
                     os.rename(full_path, os.path.join(to_path_train, filename))
                 else:
                     os.rename(full_path, os.path.join(to_path_test, filename))
 
 
-att()
-
-
-
+if __name__ == '__main__':
+    chokepoint()
+    duke()
+    att()

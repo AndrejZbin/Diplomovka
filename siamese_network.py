@@ -1,27 +1,14 @@
-import help_functions
-import numpy as np
-import os
-
-import tensorflow as tf
-from keras.models import Sequential
-from keras.optimizers import Adam, RMSprop
-from keras.layers import Conv2D, ZeroPadding2D, Activation, Input, concatenate, Dropout
-from keras.models import Model
-
-from keras.layers.normalization import BatchNormalization
-from keras.layers.pooling import MaxPooling2D
-from keras.layers.merge import Concatenate
-from keras.layers.core import Lambda, Flatten, Dense
-from keras.initializers import glorot_uniform, RandomNormal
-
 from keras import regularizers, backend
+from keras.models import Sequential, Model
+from keras.optimizers import Adam
+from keras.layers import Conv2D, Input, Dropout
+from keras.layers.pooling import MaxPooling2D
+from keras.layers.core import Lambda, Flatten, Dense
 
 import config
 
-import logging
 
-
-def get_face_model(dimensions):
+def get_face_model(dimensions=(config.face_image_resize[1], config.face_image_resize[0], 1)):
     network = Sequential()
     network.add(Conv2D(64, (10, 10), activation='relu', input_shape=dimensions,
                 kernel_initializer='random_uniform', kernel_regularizer=regularizers.l2(0.0002)))
@@ -59,132 +46,5 @@ def get_face_model(dimensions):
     return siamese_net
 
 
-def get_body_model(dimensions):
+def get_body_model(dimensions=(config.body_image_resize[1], config.body_image_resize[0], 3)):
     return get_face_model(dimensions)
-
-
-def get_image_pair_batch(people_count=10, folder=config.train_folder):
-    while True:
-        inputs, targets = help_functions.get_image_pairs(folder, people_count)
-        yield inputs, targets
-
-
-def train_body():
-    train_images = help_functions.load_all_images(config.train_folder, preprocess=help_functions.resize_body)
-
-    # Hyper-parameters
-    people_count = 10
-    iterations = 60000
-    checkpoint = 20
-    save_checkpoint = 10000
-
-    backend.clear_session()
-    model = get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
-    f = open(os.path.join('model_history', 'body_perf.txt'), 'a')
-    # print(model.summary())
-    for i in range(1, iterations+1):
-        inputs, targets = help_functions.get_image_pairs(train_images, people_count)
-        (loss, acc) = model.train_on_batch(inputs, targets)
-
-        if i % checkpoint == 0:
-            print('Iteration: ' + str(i))
-            print('Loss: ' + str(loss))
-            print('Accuracy: ' + str(acc))
-            f.write(str(i) + ' ' + str(loss) + ' ' + str(acc) + '\n')
-        if i % save_checkpoint == 0:
-            model.save_weights(os.path.join('model_history', str(i) + 'FB.h5'))
-            logging.debug('model saved')
-    model.save_weights(os.path.join('model_history', 'base_body_weights.h5'))
-    f.close()
-
-
-def train_face():
-    #train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm', preprocess=help_functions.resize_face)
-    train_images = help_functions.load_all_images(config.chokepoint_cropped_train, file_type='.pgm',
-                                                  preprocess=help_functions.random_resize_face)
-
-    # Hyper-parameters
-    people_count = 8
-    iterations = 80000
-    checkpoint = 20
-    save_checkpoint = 10000
-
-    backend.clear_session()
-    model = get_face_model((config.face_resize[1], config.face_resize[0], 1))
-    f = open(os.path.join('model_history', 'face_perf.txt'), 'a')
-    # print(model.summary())
-    for i in range(1, iterations+1):
-        inputs, targets = help_functions.get_image_pairs(train_images, people_count)
-        (loss, acc) = model.train_on_batch(inputs, targets)
-        if i % checkpoint == 0:
-            print('Iteration: ' + str(i))
-            print('Loss: ' + str(loss))
-            print('Accuracy: ' + str(acc))
-            f.write(str(i) + ' ' + str(loss) + ' ' + str(acc) + '\n')
-        if i % save_checkpoint == 0:
-            model.save_weights(os.path.join('model_history', str(i) + 'F.h5'))
-            logging.debug('model saved')
-            f.flush()
-    model.save_weights(os.path.join('model_history', 'base_face_weights.h5'))
-    f.close()
-
-
-def test_body(model_file):
-    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize_body)
-    model = get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
-    model.load_weights(filepath=model_file)
-
-    print('body')
-    for i in range(10):
-        inputs, targets = help_functions.get_image_pairs(test_images, 10)
-
-        result = model.test_on_batch(inputs, targets)
-        print(result)
-
-
-def test_body_oneshot(model_file, iterations=10, versus=4):
-    test_images = help_functions.load_all_images(config.test_folder, preprocess=help_functions.resize_body)
-    model = get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
-    model.load_weights(filepath=model_file)
-
-    matched = 0
-    for i in range(iterations):
-        inputs, targets = help_functions.get_oneshot_pair(test_images, versus)
-        result = model.predict_on_batch(inputs)
-        matched += np.argmax(result) == np.argmax(targets)
-    print('Oneshot body:', float(matched)/float(iterations), 'vs', versus)
-
-
-def test_face(model_file):
-    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.resize_face)
-    model = get_face_model((config.face_resize[1], config.face_resize[0], 1))
-    model.load_weights(filepath=model_file)
-    print('face')
-    for i in range(10):
-        inputs, targets = help_functions.get_image_pairs(test_images, 10)
-
-        result = model.test_on_batch(inputs, targets)
-        print(result)
-
-
-def test_face_oneshot(model_file, iterations=10, versus=4):
-    test_images = help_functions.load_all_images(config.chokepoint_cropped_test,  file_type='.pgm', preprocess=help_functions.resize_face)
-    model = get_face_model((config.face_resize[1], config.face_resize[0], 1))
-    model.load_weights(filepath=model_file)
-
-    matched = 0
-    for i in range(iterations):
-        inputs, targets = help_functions.get_oneshot_pair(test_images, versus)
-        result = model.predict_on_batch(inputs)
-        matched += np.argmax(result) == np.argmax(targets)
-    print('Oneshot face:', float(matched)/float(iterations), 'vs', versus)
-
-
-if __name__ == '__main__':
-    backend.clear_session()
-    # train_face()
-    # test_body(os.path.join('computed_data', 'body', '60000FB.h5'))
-    test_face(config.base_face_model)
-
-    # test_body_oneshot(os.path.join('computed_data', 'body', '60000FB.h5'), 100, 16)
-    test_face_oneshot(config.base_face_model, 100, 16)

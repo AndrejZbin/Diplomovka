@@ -34,6 +34,8 @@ class PicturePlayback(Playback):
         self.start_time = None
 
     def get_frame(self):
+        if not self.is_playing():
+            return self.frame
         time_diff = (int(round(time.time() * 1000)) - self.start_time)
         frame_index = int(time_diff/self.frametime)
         if self.each_frame and frame_index > self.previous_index + 1:
@@ -41,6 +43,7 @@ class PicturePlayback(Playback):
         if frame_index != self.previous_index:
             if frame_index >= len(self.captures):
                 self.stop()
+                self.frame = None
             else:
                 self.previous_index = frame_index
                 self.frame = cv2.imread(self.captures[frame_index], cv2.IMREAD_COLOR)

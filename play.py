@@ -1,28 +1,19 @@
-import cv2
 import os
-
-import feature_extractors as fe
-
-import help_functions
-
 import re
 import math
-
 import dlib
+import logging
+import detect
+import help_functions
+import recognize
+import config
+
+import improve
+
 from centroid_tracker import CentroidTracker
 from person_track import PersonTrack
 
-import api_functions
-
-from playback import *
-
-import config
-
-import siamese_network
-
-import numpy as np
-
-import logging
+from players import *
 
 # saved information about detected people, key=ID, value=person_track instance
 tracked_objects = {}
@@ -42,7 +33,7 @@ def build_known_people():
     # not necessary to know people
     if config.learning_start or config.learning_improving:
         return
-    images = help_functions.load_all_images(config.keep_track_targeted_files, '', help_functions.resize_face)
+    images = help_functions.load_all_images(config.keep_track_targeted_files, '', help_functions.identity)
     # one id for one name, there may be multiple files with same them
     name_to_id = {}
 
@@ -59,16 +50,15 @@ def build_known_people():
         name = match.group(2)
         # try to get track if we have seen this person before and how many time we have seen him
         track_id, count = name_to_id.get(name, (None, 0))
-        track = None
         # first time we see picture of this person
         if track_id is None:
             track_id = next_id
             next_id -= 1
             track = PersonTrack(track_id, n_cameras)
             track.reid()  # not necessary but good to have
-            track.idenify(name)
+            track.identify(name)
             tracked_objects[track_id] = track
-            name_to_id[name] = (track_id, count +1)
+            name_to_id[name] = (track_id, count + 1)
         else:
             track = tracked_objects.get(track_id, None)
 
@@ -106,15 +96,15 @@ def playback():
         print(img_list_paths)
 
         players = list(map(
-            lambda l: PicturePlayback([os.path.join(os.path.dirname(l), line.rstrip('\n')) for line in open(l)], 30, True),
+            lambda l: PicturePlayback(
+                [os.path.join(os.path.dirname(l), line.rstrip('\n')) for line in open(l)], 30, True),
             img_list_paths))
-
         # players = [CameraPlayback()]
         # player = [VideoPlayback('video.avi')]
         # players = [YoutubePlayback('https://www.youtube.com/watch?v=N79f1znMWQ8')]
 
         # centroid tracker for each camera to keep track of IDs after new detection
-        centroid_tracker = [CentroidTracker(0, 200) for _ in range(len(cams))]
+        centroid_tracker = [CentroidTracker(0, config.centroid_max_distance) for _ in range(len(cams))]
         correlation_trackers = [[] for _ in range(len(cams))]
 
         # start playback
@@ -122,15 +112,13 @@ def playback():
             player.start()
 
         frame_index = 0
-        while all([player.is_playing() for player in players]):
+        while any([player.is_playing() for player in players]):
             frames = [player.get_frame() for player in players]
             # make them all to have the same length
-            if any(list(map(lambda f: f is None, frames))):
-                print('Ended')
-                break
-
             # current frame for each camera
             for camera_i, frame in enumerate(frames):
+                if frame is None:
+                    continue
                 # rectangles of detected people in current frame
                 frame_copy = frame.copy()
                 bodies = []
@@ -142,7 +130,7 @@ def playback():
                 should_reid = (frame_index % config.detect_frequency == 0)
                 if should_detect:
                     # detect rectangles
-                    bodies = api_functions.detect_people(frame)
+                    bodies = detect.detect_people(frame)
                     correlation_trackers[camera_i] = build_trackers(bodies, frame)
                 else:
                     # track rectangles
@@ -182,18 +170,18 @@ def playback():
                     if should_sample:
                         person_track.add_body_sample(cropped_body, frame_index, camera_i)
                         # try to find face of this person
-                        face = api_functions.get_face(cropped_body)
+                        face = detect.get_face(cropped_body)
                         if face is not None:
                             person_track.add_face_sample(face, frame_index, camera_i)
                     if need_reid:
-                        same_person_id = api_functions.compare_to_detected(person_track, tracked_objects)
+                        same_person_id = recognize.compare_to_detected(person_track, tracked_objects)
                         if same_person_id is not None and same_person_id != track_id:
                             # get track of person we matched
                             same_person_track = tracked_objects.get(same_person_id)
                             # merge information
                             same_person_track.merge(person_track)
                             # we only need one track, the one that doesn't have less information
-                            del tracked_objects[track_id]
+                            tracked_objects.pop(track_id)
                             # re-ID from trackers ID to person ID
                             tracked_objects_reid[track_id] = same_person_id
                             # update values
@@ -226,156 +214,10 @@ def playback():
 
         # build database from collected information
         if config.build_dataset:
-            build_new_dataset(group_name)
+            improve.build_new_dataset(group_name, tracked_objects)
 
     logging.info('PLAYBACK: Playback finished')
 
 
-# build a new dataset from information we gathered from this playback
-def build_new_dataset(group_name):
-    # we save images here
-    path = os.path.join(config.improve_folder, group_name)
-    # create necessary folders
-    if not os.path.exists(os.path.join(path, 'faces')):
-        os.makedirs(os.path.join(path, 'faces'))
-    if not os.path.exists(os.path.join(path, 'bodies')):
-        os.makedirs(os.path.join(path, 'bodies'))
-    # iterate over tracked people
-    for track_id, track in tracked_objects.items():
-        # if people were unmatched, they could cause false negatives, we don't want feed our model with that
-        if not track.was_reided():
-            continue
-        faces = track.face_full_images
-        faces_info = track.face_full_images_info
-
-        bodies = track.body_full_images
-        bodies_info = track.body_full_images_info
-        for i in range(len(faces)):
-            face = faces[i]
-            frame, camera = faces_info[i]
-            # make filename matching other dataset's filenames
-            filename = str(track_id) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
-            # finally save image
-            cv2.imwrite(os.path.join(path, 'faces', filename), face)
-        for i in range(len(bodies)):
-            body = bodies[i]
-            frame, camera = bodies_info[i]
-            # make filename matching other dataset's filenames
-            filename = str(track_id) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
-            # finally save image
-            cv2.imwrite(os.path.join(path, 'bodies', filename), body)
-
-
-# fix dataset by matching different IDs, check manually, also delete manually bad files
-def fix_built_dataset():
-    while True:
-        r = input('Fix from to: ')
-        r = r.split(' ')
-        if len(r) != 2:
-            break
-        try:
-            f, t = int(r[0]), int(r[1])
-        except ValueError:
-            break
-        for path, subdirs, files in os.walk(config.improve_folder):
-            for file in files:
-                person_id, camera, frame = help_functions.info_from_image_name(file)
-                if person_id == f:
-                    filename = str(t) + '_c' + str(camera) + '_f' + str(frame) + '.jpg'
-                    os.rename(os.path.join(path, file), os.path.join(path, filename))
-
-
-# TODO: DRY, code is repeated for faces and bodies
-# improve model for recognizing faces by learning from captured data
-# potential problem A1 matched with A2, B1 matched with B2, but A1,B1,A2,B2 is one person
-def improve_faces():
-    # same person in different folders might have different ID, causing false negatives if we connected them
-    train_images = []
-    # load images from each folder
-    for group_name in config.improve_camera_groups:
-        images = help_functions.load_all_images(os.path.join(config.improve_folder, group_name, 'faces'),
-                                                file_type='.jpg', preprocess=help_functions.resize_face)
-        train_images.append(images)
-
-    # hyper-parameters
-    people_count = 8
-    iterations = 1000
-    checkpoint = 20
-    save_checkpoint = 5000
-
-    model = siamese_network.get_face_model((config.face_resize[1], config.face_resize[0], 1))
-
-    # are we improving base model of already improved model?
-    # load weight for model we are improving
-    if config.learning_start:
-        model.load_weights(filepath=config.base_face_model)
-    elif config.learning_improving:
-        model.load_weights(filepath=config.improved_face_model)
-
-    f = open(os.path.join('model_history', 'face_improve_perf.txt'), 'a')
-    logging.info('IMPROVING: Starting to improve model for faces')
-    for i in range(1, iterations+1):
-        inputs, targets = help_functions.get_image_pairs(train_images[np.random.randint(0, len(train_images))], people_count)
-        (loss, acc) = model.train_on_batch(inputs, targets)
-        if i % checkpoint == 0:
-            logging.info('Iteration: {}'.format(i))
-            logging.info('Loss: {}'.format(loss))
-            logging.info('Accuracy: {}'.format(acc))
-            f.write(str(i) + ' ' + str(loss) + ' ' + str(acc) + '\n')
-        if i % save_checkpoint == 0:
-            model.save_weights(os.path.join('model_history', str(i) + 'FI.h5'))
-            f.flush()
-    model.save_weights(config.improved_face_model)
-    f.close()
-
-
-# improve model for recognizing bodies by learning from captured data
-def improve_bodies():
-    # same person in different folders might have different ID, causing false negatives if we connected them
-    train_images = []
-    # load images from each folder
-    for group_name in config.improve_camera_groups:
-        images = help_functions.load_all_images(os.path.join(config.improve_folder, group_name, 'bodies'),
-                                                file_type='.jpg', preprocess=help_functions.resize_body)
-        train_images.append(images)
-
-    # hyper-parameters
-    people_count = 8
-    iterations = 1000
-    checkpoint = 20
-    save_checkpoint = 5000
-
-    model = siamese_network.get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
-
-    # are we improving base model of already improved model?
-    # load weight for model we are improving
-    if config.learning_start:
-        model.load_weights(filepath=config.base_body_model)
-    elif config.learning_improving:
-        model.load_weights(filepath=config.improved_body_model)
-
-    f = open(os.path.join('model_history', 'face_improve_perf.txt'), 'a')
-    logging.info('IMPROVING: Starting to improve model for bodies')
-    for i in range(1, iterations+1):
-        inputs, targets = help_functions.get_image_pairs(train_images[np.random.randint(0, len(train_images))], people_count)
-        (loss, acc) = model.train_on_batch(inputs, targets)
-        if i % checkpoint == 0:
-            logging.info('Iteration: {}'.format(i))
-            logging.info('Loss: {}'.format(loss))
-            logging.info('Accuracy: {}'.format(acc))
-            f.write(str(i) + ' ' + str(loss) + ' ' + str(acc) + '\n')
-        if i % save_checkpoint == 0:
-            model.save_weights(os.path.join('model_history', str(i) + 'FBI.h5'))
-            f.flush()
-    model.save_weights(config.improved_body_model)
-    f.close()
-
-
 if __name__ == '__main__':
     playback()
-
-    # finally we begin learning on newly collected information
-    if config.learning_improving or config.learning_start:
-        fix_built_dataset()
-        improve_faces()
-        improve_bodies()

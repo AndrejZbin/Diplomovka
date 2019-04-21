@@ -2,18 +2,21 @@ from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
 
+# original source https://www.pyimagesearch.com/2018/07/23/simple-object-tracking-with-opencv/
+# fixed bugs and improved for our solution
+
 
 class CentroidTracker:
     next_id = 1
 
-    def __init__(self, maxDisappear=60, maxDistance=50):
-        self.objects = {}
-        self.disappeared = {}
-        self.keep_track = maxDisappear
-        self.maxDistance = maxDistance
+    def __init__(self, max_disappear=60, max_distance=50):
+        self.tracks = OrderedDict()
+        self.disappeared = OrderedDict()
+        self.max_disappear = max_disappear
+        self.max_distance = max_distance
 
     def register(self, centroid):
-        self.objects[CentroidTracker.next_id] = centroid
+        self.tracks[CentroidTracker.next_id] = centroid
         self.disappeared[CentroidTracker.next_id] = 0
         CentroidTracker.next_id += 1
 
@@ -24,136 +27,64 @@ class CentroidTracker:
     #     self.deregister(old)
 
     def deregister(self, person_id):
-        # to deregister an object ID we delete the object ID from
-        # both of our respective dictionaries
-        del self.objects[person_id]
-        del self.disappeared[person_id]
+        self.tracks.pop(person_id)
+        self.disappeared.pop(person_id)
 
-    def update(self, rects, delete):
-        # check to see if the list of input bounding box rectangles
-        # is empty
-        if len(rects) == 0:
-            # loop over any existing tracked objects and mark them
-            # as disappeared
+    def update(self, rectangles, delete):
+        if len(rectangles) == 0:
             to_deregister = []
-            for objectID in self.disappeared.keys():
-                self.disappeared[objectID] += delete
+            for track_id in self.disappeared.keys():
+                self.disappeared[track_id] += delete
+                if self.disappeared[track_id] > self.max_disappear:
+                    to_deregister.append(track_id)
+            for track_id in to_deregister:
+                self.deregister(track_id)
+            return self.tracks
+        input_centroids = np.zeros((len(rectangles), 2), dtype=np.int32)
 
-                # if we have reached a maximum number of consecutive
-                # frames where a given object has been marked as
-                # missing, deregister it
-                if self.disappeared[objectID] > self.keep_track:
-                    to_deregister.append(objectID)
-            for objectID in to_deregister:
-                self.deregister(objectID)
-            # return early as there are no centroids or tracking info
-            # to update
-            return self.objects
-        # initialize an array of input centroids for the current frame
-        inputCentroids = np.zeros((len(rects), 2), dtype="int")
+        for (i, (x1, y1, x2, y2)) in enumerate(rectangles):
+            input_centroids[i] = (int((x1 + x2) / 2.0), int((y1 + y2) / 2.0))
 
-        # loop over the bounding box rectangles
-        for (i, (startX, startY, endX, endY)) in enumerate(rects):
-            # use the bounding box coordinates to derive the centroid
-            cX = int((startX + endX) / 2.0)
-            cY = int((startY + endY) / 2.0)
-            inputCentroids[i] = (cX, cY)
-
-
-        # if we are currently not tracking any objects take the input
-        # centroids and register each of them
-        if len(self.objects) == 0:
-            for i in range(0, len(rects)):
-                self.register(rects[i])
-        # otherwise, are are currently tracking objects so we need to
-        # try to match the input centroids to existing object
-        # centroids
+        if len(self.tracks) == 0:
+            for i in range(len(rectangles)):
+                self.register(rectangles[i])
         else:
-            # grab the set of object IDs and corresponding centroids
-            objectIDs = list(self.objects.keys())
-            objectCentroids = np.zeros((len(objectIDs), 2), dtype="int")
-            for (i, (startX, startY, endX, endY)) in enumerate(self.objects.values()):
-                # use the bounding box coordinates to derive the centroid
-                cX = int((startX + endX) / 2.0)
-                cY = int((startY + endY) / 2.0)
-                objectCentroids[i] = (cX, cY)
+            track_ids = list(self.tracks.keys())
+            centroids = np.zeros((len(track_ids), 2), dtype=np.int32)
+            for (i, (x1, y1, x2, y2)) in enumerate(self.tracks.values()):
+                centroids[i] = (int((x1 + x2) / 2.0), int((y1 + y2) / 2.0))
 
-            # compute the distance between each pair of object
-            # centroids and input centroids, respectively -- our
-            # goal will be to match an input centroid to an existing
-            # object centroid
-            D = dist.cdist(np.array(objectCentroids), inputCentroids)
+            distance_matrix = dist.cdist(np.array(centroids), input_centroids)
+            rows = distance_matrix.min(axis=1).argsort()
+            cols = distance_matrix.argmin(axis=1)[rows]
+            used_rows = set()
+            used_cols = set()
 
-            # in order to perform this matching we must (1) find the
-            # smallest value in each row and then (2) sort the row
-            # indexes based on their minimum values so that the row
-            # with the smallest value is at the *front* of the index
-            # list
-            rows = D.min(axis=1).argsort()
-
-            # next, we perform a similar process on the columns by
-            # finding the smallest value in each column and then
-            # sorting using the previously computed row index list
-            cols = D.argmin(axis=1)[rows]
-            # in order to determine if we need to update, register,
-            # or deregister an object we need to keep track of which
-            # of the rows and column indexes we have already examined
-            usedRows = set()
-            usedCols = set()
-
-            # loop over the combination of the (row, column) index
-            # tuples
-            for (row, col) in zip(rows, cols):
-                # if we have already examined either the row or
-                # column value before, ignore it
-                # val
-                if row in usedRows or col in usedCols:
+            for row, col in zip(rows, cols):
+                if row in used_rows or col in used_cols:
+                    continue
+                if distance_matrix[row, col] > self.max_distance:
                     continue
 
-                if D[row, col] > self.maxDistance:
-                    continue
+                track_id = track_ids[row]
+                self.tracks[track_id] = rectangles[col]
+                self.disappeared[track_id] = 0
+                used_rows.add(row)
+                used_cols.add(col)
 
-                # otherwise, grab the object ID for the current row,
-                # set its new centroid, and reset the disappeared
-                # counter
-                objectID = objectIDs[row]
-                self.objects[objectID] = rects[col]
-                self.disappeared[objectID] = 0
+            unused_rows = set(range(distance_matrix.shape[0])).difference(used_rows)
+            unused_cols = set(range(distance_matrix.shape[1])).difference(used_cols)
 
-                # indicate that we have examined each of the row and
-                # column indexes, respectively
-                usedRows.add(row)
-                usedCols.add(col)
+            if distance_matrix.shape[0] >= distance_matrix.shape[1]:
+                for row in unused_rows:
+                    track_id = track_ids[row]
+                    self.disappeared[track_id] += delete
 
-                # compute both the row and column index we have NOT yet
-                # examined
-            unusedRows = set(range(0, D.shape[0])).difference(usedRows)
-            unusedCols = set(range(0, D.shape[1])).difference(usedCols)
-            # in the event that the number of object centroids is
-            # equal or greater than the number of input centroids
-            # we need to check and see if some of these objects have
-            # potentially disappeared
-            if D.shape[0] >= D.shape[1]:
-                # loop over the unused row indexes
-                for row in unusedRows:
-                    # grab the object ID for the corresponding row
-                    # index and increment the disappeared counter
-                    objectID = objectIDs[row]
-                    self.disappeared[objectID] += delete
-
-                    # check to see if the number of consecutive
-                    # frames the object has been marked "disappeared"
-                    # for warrants deregistering the object
-                    if self.disappeared[objectID] > self.keep_track:
-                        self.deregister(objectID)
-                        # otherwise, if the number of input centroids is greater
-                        # than the number of existing object centroids we need to
-                        # register each new input centroid as a trackable object
+                    if self.disappeared[track_id] > self.max_disappear:
+                        self.deregister(track_id)
             else:
-                for col in unusedCols:
-                    self.register(rects[col])
+                for col in unused_cols:
+                    self.register(rectangles[col])
 
-        # return the set of trackable objects
-
-        filtered_dict = {k: v for (k, v) in self.objects.items() if self.disappeared.get(k, 0) == 0}
+        filtered_dict = {k: v for (k, v) in self.tracks.items() if self.disappeared.get(k, 0) == 0}
         return filtered_dict
