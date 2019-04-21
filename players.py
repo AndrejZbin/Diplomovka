@@ -1,6 +1,9 @@
 import time
 import cv2
 import pafy
+import os
+
+supported_formats = ['png', 'jpg', 'jpeg', 'bmp']
 
 
 class Playback:
@@ -18,8 +21,11 @@ class Playback:
 
 
 class PicturePlayback(Playback):
-    def __init__(self, captures, framerate=30, each_frame=True):
-        self.captures = captures
+    def __init__(self, folder, framerate=30, each_frame=True):
+        self.captures = []
+        for file in sorted(os.listdir(folder)):
+            if any([file.endswith(end) for end in supported_formats]):
+                self.captures.append(os.path.join(folder, file))
         self.framerate = framerate
         self.frametime = (1000/self.framerate)
         self.start_time = None

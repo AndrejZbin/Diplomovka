@@ -84,21 +84,14 @@ def build_trackers(rectangles, image):
 # start playing video
 def playback():
     # handle each group separately, good for making DB
-    for cams, group_name in cams_groups:
+    for cams, group_name, fps in cams_groups:
         # delete everything we know
         tracked_objects.clear()
         tracked_objects_reid.clear()
         if config.keep_track_targeted:
             build_known_people()
 
-        # TODO: don't use all_file.txt file, instead load images using functions made for it
-        img_list_paths = list(map(lambda c: os.path.join(c, 'all_file.txt'), cams))
-        print(img_list_paths)
-
-        players = list(map(
-            lambda l: PicturePlayback(
-                [os.path.join(os.path.dirname(l), line.rstrip('\n')) for line in open(l)], 30, True),
-            img_list_paths))
+        players = [PicturePlayback(camera, fps, not config.playback_realtime) for camera in cams]
         # players = [CameraPlayback()]
         # player = [VideoPlayback('video.avi')]
         # players = [YoutubePlayback('https://www.youtube.com/watch?v=N79f1znMWQ8')]

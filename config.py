@@ -10,6 +10,8 @@ learning_start = False
 # improve improved model
 learning_improving = False
 
+playback_realtime = False
+
 # user confirm before matching
 confirm_match = True
 # set to any number x to confirm x matches
@@ -17,7 +19,7 @@ confirm_match = True
 confirm_match_count = 999
 
 n_cameras = 3
-cams_groups = [(['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1'], 'group1')]
+cams_groups = [(['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1'], 'group1', 30)]
 
 
 # all folders
@@ -57,7 +59,7 @@ face_image_resize = (96, 96)
 # how many samples for each camera is saved in track
 sample_size = 4
 
-# how often we detect again
+# how often we detect again (30 means 1 in 30 displayed frames)
 detect_frequency = 30
 
 detect_body_confidence = 0.50
