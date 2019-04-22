@@ -1,13 +1,12 @@
-import os
 import re
 import math
 import dlib
 import logging
+
 import detect
 import help_functions
 import recognize
 import config
-
 import improve
 
 from centroid_tracker import CentroidTracker

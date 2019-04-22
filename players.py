@@ -67,6 +67,8 @@ class CameraPlayback(Playback):
         self.video_capture = cv2.VideoCapture(0)
 
     def get_frame(self):
+        if not self.is_playing():
+            return None
         ret, frame = self.video_capture.read()
         return frame
 
@@ -88,6 +90,8 @@ class VideoPlayback(Playback):
         self.video_capture = cv2.VideoCapture(self.path)
 
     def get_frame(self):
+        if not self.is_playing():
+            return None
         ret, frame = self.video_capture.read()
         return frame
 
@@ -110,6 +114,8 @@ class YoutubePlayback(Playback):
         self.video_capture = cv2.VideoCapture(self.youtube.url)
 
     def get_frame(self):
+        if not self.is_playing():
+            return None
         ret, frame = self.video_capture.read()
         return frame
 
