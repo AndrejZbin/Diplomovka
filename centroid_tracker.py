@@ -20,11 +20,10 @@ class CentroidTracker:
         self.disappeared[CentroidTracker.next_id] = 0
         CentroidTracker.next_id += 1
 
-    # def reid(self, old, new):
-    #
-    #     self.objects[new] = self.objects.get(old)
-    #     self.disappeared[new] = self.disappeared.get(old)
-    #     self.deregister(old)
+    def reid(self, old, new):
+        self.tracks[new] = self.tracks.get(old)
+        self.disappeared[new] = self.disappeared.get(old)
+        self.deregister(old)
 
     def deregister(self, person_id):
         self.tracks.pop(person_id)
