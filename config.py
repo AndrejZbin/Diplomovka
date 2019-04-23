@@ -12,6 +12,9 @@ learning_improving = False
 
 playback_realtime = False
 
+# should person be compares to himself every detection?
+reid_same = True
+
 # user confirm before matching
 confirm_match = True
 # set to any number x to confirm x matches
