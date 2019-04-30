@@ -22,22 +22,28 @@ def confirm_match(candidate_track, same_track):
         face1 = candidate_track.get_face_images()
         face2 = same_track.get_face_images()
         body1 = candidate_track.get_body_images()
-        body1 = body1[np.random.randint(0, body1.shape[0])]
         body2 = same_track.get_body_images()
-        body2 = body2[np.random.randint(0, body2.shape[0])]
+        showed = False
+        if body1.shape[0] > 0 and body2.shape[0] > 0:
+            body1 = body1[np.random.randint(0, body1.shape[0])]
+            body2 = body2[np.random.randint(0, body2.shape[0])]
+            cv2.imshow('candidate', body1.astype(np.uint8))
+            cv2.imshow('matched to', body2.astype(np.uint8))
+            showed = True
         if face1.shape[0] > 0 and face2.shape[0] > 0:
             face1 = face1[np.random.randint(0, face1.shape[0])]
             face2 = face2[np.random.randint(0, face2.shape[0])]
 
             cv2.imshow('candidate face', face1.astype(np.uint8))
             cv2.imshow('matched to face', face2.astype(np.uint8))
-        cv2.imshow('candidate', body1.astype(np.uint8))
-        cv2.imshow('matched to', body2.astype(np.uint8))
+            showed = True
         choice = cv2.waitKey() & 0xFF
         cv2.destroyWindow('candidate')
         cv2.destroyWindow('matched to')
         cv2.destroyWindow('candidate face')
         cv2.destroyWindow('matched to face')
+        if not showed:
+            return False
         # not a match
         if choice == ord('n'):
             return False
@@ -158,9 +164,9 @@ def compare_to_detected(candidate_track, saved_objects):
         if np.isnan(match_face[i]) and np.isnan(match_body[i]):
             match[i] = 0
         elif np.isnan(match_face[i]):
-            match[i] = match_body[i] * bt
+            match[i] = match_body[i]
         elif np.isnan(match_body[i]):
-            match[i] = match_face[i] * ft
+            match[i] = match_face[i]
         else:
             match[i] = (match_face[i] * ft + match_body[i] * bt) / (ft + bt)
 

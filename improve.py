@@ -80,8 +80,8 @@ def improve_faces():
 
     # hyper-parameters
     people_count = 8
-    iterations = 1000
-    checkpoint = 20
+    iterations = 8000
+    checkpoint = 2
     save_checkpoint = 5000
 
     model = siamese_network.get_face_model((config.face_image_resize[1], config.face_image_resize[0], 1))
@@ -122,8 +122,8 @@ def improve_bodies():
 
     # hyper-parameters
     people_count = 8
-    iterations = 1000
-    checkpoint = 20
+    iterations = 8000
+    checkpoint = 2
     save_checkpoint = 5000
 
     model = siamese_network.get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))

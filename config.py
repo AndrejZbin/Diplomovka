@@ -4,22 +4,24 @@ import logging
 # some parameters are important for good accuracy, depending on camera position and other factors
 
 # don't learn anything
-production = False
+production = True
 # improve base model
 learning_start = False
 # improve improved model
 learning_improving = False
 
+build_dataset = True
+
 playback_realtime = False
 
 # should person be compares to himself every detection?
-reid_same = True
+reid_same = False
 
 # user confirm before matching
 confirm_match = True
 # set to any number x to confirm x matches
 # set to 0 to confirm  all matches that fit condition required_match_count
-confirm_match_count = 999
+confirm_match_count = 0
 
 n_cameras = 3
 cams_groups = [(['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1'], 'group1', 30)]
@@ -77,8 +79,6 @@ keep_track_targeted_files = 'known_people'
 # how much can a person move between frame, set to 0 for comparing each frame
 centroid_max_distance = 200
 
-build_dataset = True
-
 avoid_false_positives = False
 
 # how many images have to be set as matched to be a match
@@ -86,7 +86,7 @@ required_match_count = 0.66
 
 keep_full_samples = True
 
-body_compare_trust = 0.8
+body_compare_trust = 1.0
 face_compare_trust = 1.0
 
 # ###############################################

@@ -144,42 +144,43 @@ def playback():
                     person_track = tracked_objects.get(track_id, None)
 
                     cropped_body = frame[y1:y2, x1:x2]
-                    if should_detect:
-                        if person_track is None:
+
+                    if person_track is None:
+                        if should_detect:
                             logging.info('PLAYBACK: new person {} detected in camera {}'.format(track_id, camera_i))
-                            person_track = PersonTrack(track_id, n_cameras)
-                            tracked_objects[track_id] = person_track
-                            # sample for re-ID
-                            should_sample = True
-                            # try to find whether we have seen this person before
-                            should_reid = True
-                        else:
-                            # compare to self just in case it's actually a new person
-                            if config.reid_same:
-                                test_id = centroid_tracker[camera_i].next_id
-                                test_track = PersonTrack(test_id, n_cameras)
-                                test_track.add_body_sample(cropped_body, frame_index, camera_i)
-                                face = detect.get_face(cropped_body)
-                                if face is not None:
-                                    test_track.add_face_sample(face, frame_index, camera_i)
-                                self_compare = recognize.compare_to_detected(test_track, {track_id: person_track})
-                                # same centroid but persons don't match
-                                if self_compare is None:
-                                    # re-id this centroid because i'ts not the same person
-                                    centroid_tracker[camera_i].reid(track_id, test_id)
-                                    CentroidTracker.next_id += 1
+                        person_track = PersonTrack(track_id, n_cameras)
+                        tracked_objects[track_id] = person_track
+                        # sample for re-ID
+                        should_sample = True
+                        # try to find whether we have seen this person before
+                        should_reid = True
+                    elif should_detect:
+                        # compare to self just in case it's actually a new person
+                        if config.reid_same:
+                            test_id = centroid_tracker[camera_i].next_id
+                            test_track = PersonTrack(test_id, n_cameras)
+                            test_track.add_body_sample(cropped_body, frame_index, camera_i)
+                            face = detect.get_face(cropped_body)
+                            if face is not None:
+                                test_track.add_face_sample(face, frame_index, camera_i)
+                            self_compare = recognize.compare_to_detected(test_track, {track_id: person_track})
+                            # same centroid but persons don't match
+                            if self_compare is None:
+                                # re-id this centroid because i'ts not the same person
+                                centroid_tracker[camera_i].reid(track_id, test_id)
+                                CentroidTracker.next_id += 1
 
-                                    tracked_objects[test_id] = test_track
-                                    track_id = test_id
-                                    person_track = test_track
+                                tracked_objects[test_id] = test_track
+                                track_id = test_id
+                                person_track = test_track
 
-                                    logging.info('PLAYBACK: new person {} detected in camera {}'.format(track_id, camera_i))
+                                logging.info('PLAYBACK: new person {} detected in camera {}'.format(track_id, camera_i))
 
-                                    should_sample = False
-                                    should_reid = True
-                            # TODO: re-IDed person should be re-IDed again, because A1==A2 =never match= B1==B2
-                            # don't re-ID people who were re-IDed before, so there are no cycles in detection
-                            should_reid = should_reid and not person_track.was_reided()
+                                should_sample = False
+                                should_reid = True
+                        # TODO: re-IDed person should be re-IDed again, because A1==A2 =never match= B1==B2
+                        # don't re-ID people who were re-IDed before, so there are no cycles in detection
+                        should_reid = should_reid and not person_track.was_reided()
 
                     if should_sample:
                         person_track.add_body_sample(cropped_body, frame_index, camera_i)
