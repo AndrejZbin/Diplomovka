@@ -4,8 +4,8 @@ Finálna aplikácia je implementovaná v jazyku Python 3 s využitím knižnice 
 Dokáže súčasne prehrať záznamy uložené na disku vo forme videa alebo sledu obrázkov, záznam z webkamery a taktiež internetový stream.
 Osoby sú na týchto záznamoch detegované pomocou predtrénovanej neurónovej siete MobileNet-SSD, 
 ich tváre pomocou klasifikátora založeného na Haarových príznakoch implementovaného v knižnici OpenCV. 
-Na klasifikáciu osôb aplikácia využíva siamsku neurónovú sieť. 
-Sieť bola predtrénovaná na datasete ChokePoint pre klasifikáciu na základe tváre a na datasete DukeMTMC pre klasifikáciu na základe celého tela.
+Na klasifikáciu osôb aplikácia využíva siamskú neurónovú sieť. 
+Sieť bola predtrénovaná na datasete ChokePoint \cite{wong_cvprw_2011} pre klasifikáciu na základe tváre a na datasete DukeMTMC \cite{ristani2016MTMC} \cite{zheng2017unlabeled} pre klasifikáciu na základe celého tela.
 Aplikácia umožňuje dotrénovanie sietí na prehrávaných záznamov, čim sa zvýši presnosť klasifikácie.
 Na vyhľadanie konkrétnej (známej) osoby v zázname stačí len jedna snímka tela alebo tváre danej osoby. 
 Okrem toho program dokáže identifikovať neznáme osoby, ktoré sa už predtým nachádzali v niektorom z prehrávaných záznamov.
@@ -16,60 +16,60 @@ Detekcia osoby je vykonávaná funkciou detect\_people v súbore detect.py. Para
 Detekcia môže byť vykonaná pomocou histogramu orientovaných gradientov alebo pomocou neurónovej sieteMobileNet-SSD.
 Druhá možnosť sa v testovaní ukázala ako lepšia. 
 Okrem lepšej presnosti detekcie bola taktiež rýchlejšia ako prvá spomenutá možnosť.
-Výstupom funkcie je množina obdlžníkov, kde každý obdĺžnik ohraničuje jednu osobu na snímke. 
-Obĺžnik je reprezentovaný 4 bodmi - vrcholmi oblžníka.
+Výstupom funkcie je množina obdĺžnikov, kde každý obdĺžnik ohraničuje jednu osobu na snímke. 
+Obdĺžnik je reprezentovaný 4 bodmi - vrcholmi obĺžnika.
 Pred vstupom do siete je obrázok normalizovaný na veľkosť 300x300. 
 Vďaka tomu je detekcia niekoľkonásobne rýchlejšia a pritom stále dostatočne presná.
 
 Detekcia tváre prebieha v aplikácii len na častiach snímok, na ktorých bola detegovaná osoba.
 Vďaka tomu je detekcia rýchla a vieme jednoducho určiť, ktorá tvár patrí ku ktorej osobe.
 Detekciu program vykonáva pomocou Haarových príznakov. 
-Táto metóda sa ukázala ako dostatočne presná na náš účel aj napriek občasným falošným detekciam.
+Táto metóda sa ukázala ako dostatočne presná na náš účel aj napriek občasným falošným detekciám.
 Pokiaľ je na snímke detegovaná viac ako jedna tvár, všetky detekcie jednoducho ignorujeme. 
 Síce tak prídeme aj o niekoľko správnych detekcií, ale pokiaľ je osoba na zázname dlhšie, tak táto strata problém nerobí.
 
 
 \section{Rozpoznanie osoby na videu}
 Rozpoznávanie vykonáva funkcia compare\_to\_detected v súbore recognize.py.
-Osoby rozpoznávame  kombináciou dvoch spôsobov: podľa snímov tváre a podľa snímov celého tela.
-Oba spôsoby využívajú rovnakú siamskú neurónovú sieť, ako sme popísali v kapitole [TODO]. 
+Osoby rozpoznávame kombináciou dvoch spôsobov: hľadaním podobnosti medzi snímkami tvárí a hľadaním podobnosti medzi snímkami celých tiel.
+Oba spôsoby využívajú rovnakú siamskú neurónovú sieť, ako sme popísali v podkapitole \ref{kap:siamese_architecture}. 
 Pre každú osobu si uchovávame niekoľko záberov ich tváre a tela. 
 Staré zábery sú nahradené novšími, takže napríklad aj zmena oblečenia v zábere kamery nespôsobí väčší problém.
 V prípade, že hľadáme konkrétnu osobu, vytvoríme nový záznam a uložíme do neho zábery, podľa ktorých chceme danú osobu hľadať.
 Ak chceme osobu identifikovať, porovnáme ju so všetkými uloženými osobami podľa tváre a podľa tela.
-Jednotlivé výsledky pre tvár a telo spriemerujeme (je možné nastaviť pomer, ako výsledkom veríme, základný je 1:1), nájdeme najväčšiu zhodu a pokiaľ je táto zhoda väčšia ako nastavený parameter, určíme, že sa jedná o tú istú osobu.
-Zhodu tváre aj tela pre dve osoby spočítame tak, že pomocou siamskej siete zistíme zhodu medzi každými dvomi uloženými zábermi daných osôb.
-Zhoda je reálne číslo medzi 0 a 1.
-Taktiež je možné nastaviť hodnotu threshold a zhodu pretransformovať len na hodnoty 0 (ak je zhoda menšia ako threshold) a 1 (inak).
-Ak nastavíme threshold väčší, vyhneme sa falošným zhodám, avšak môžeme prísť o niektoré pravé zhody.
+Jednotlivé výsledky pre tvár a telo spriemerujeme (je možné nastaviť pomer, ako výsledkom veríme, základný je 1:1), nájdeme najväčšiu podobnosť a pokiaľ je táto podobnosť väčšia ako nastavený parameter, určíme, že sa jedná o tú istú osobu.
+Podobnosť tváre aj tela pre dve osoby spočítame tak, že pomocou siamskej siete zistíme podobnosť medzi každými dvomi uloženými zábermi daných osôb.
+Podobnosť je reálne číslo medzi 0 a 1.
+Taktiež je možné nastaviť hodnotu threshold a podobnosť pretransformovať len na hodnoty 0 (ak je podobnosť menšia ako threshold) a 1 (inak).
+Ak nastavíme threshold väčší, vyhneme sa falošným (nesprávnym) zhodám, avšak môžeme prísť o niektoré správne zhody.
 
 
 
 Pre zlepšenie presnosti je možné sieť dotrénovať na záberoch z kamier, na ktorých chceme program používať.
-Pri dotrénovaní sa využívajú predtrénované modely z kapitoly [TODO].
-Pri každom rozhodnutí, či sa jedná o rovnakú osobu, sa používateľovi zobrazí možnost toto rozhodnutie potvrdiť alebo zamietnuť.
-Pokial používateľ zamietne, môže sa mu zobraziť ďalšia najbližšia zhoda (podľa konfiguráciu).
-Týmto spôsobom vybudujeme nový dataset, ktorý využijeme na dotrénovanie rovnako, ako v kapitole [TODO].
+Pri dotrénovaní sa využívajú predtrénované modely z kapitoly \ref{kap:siamese}.
+Pri každom rozhodnutí, či sa jedná o rovnakú osobu, sa používateľovi zobrazí možnosť toto rozhodnutie potvrdiť alebo zamietnuť.
+Pokiaľ používateľ zamietne, môže sa mu zobraziť osoba s ďalšou najbližšou podobnosťou (podľa konfiguráciu).
+Týmto spôsobom vybudujeme nový dataset, ktorý využijeme na dotrénovanie rovnako, ako v podkapitole \ref{kap:siamese_train}.
 
-Ukázalo sa, že v reálnej prevádzke toto riešenie výrazne zlepšuje presnosť rozpoznávania.
+Ukázalo sa, že v reálnej prevádzke toto riešenie výrazne zlepšuje presnosť hľadania podobnosti.
 Je to spôsobené tým, že v novom datasete majú kamery rovnaké pozície ako v reálnej prevádzke, a tým pádom sú osoby zväčša snímané v podobných uhloch v porovnaní s datasetom DukeMTMC.
-Vďaka predtrénovaniu je potrebný pri trénovaní výrazne menši počet iteracií.
+Vďaka predtrénovaniu je potrebný pri trénovaní výrazne menši počet iterácií.
 
 \section{Sledovanie osoby na jednom videozázname}
 Po každej detekcii osoby získame nové obdĺžniky ohraničujúce telo osoby na snímke. 
-Strácame však informáciu o tom, ktorej osobe daný obĺžnik patrí.
+Strácame však informáciu o tom, ktorej osobe daný obdĺžnik patrí.
 Inak povedané, ak je po prvej detekcii osoba ohraničená obdĺžnikom, tak po ďalšej detekcii nevieme povedať, ktorý nový obdĺžnik ohraničuje tú istú osobu.
 Jednou možnosťou, ako tento problém riešiť, je po každej detekcii osôb znova klasifikovať každú detegovanú osobu na snímke.
 Hlavným problémom tohto riešenia je jeho časová zložitosť. 
 Podľa počtu hľadaných alebo predtým videných osôb na zázname by porovnanie medzi každým z nich mohlo trvať až niekoľko sekúnd.
 Takéto riešenie je neakceptovateľné, pokiaľ sledujeme osoby na videozázname v reálnom čase. 
 
-Problém sme vyriešili algoritmom centroid tracking [TODO CITE].
+Problém sme vyriešili algoritmom centroid tracking \cite{centroid}.
 Pre každý obdĺžnik vypočítame jeho stred. 
-Následne každý stred porovnanáme so stredmi obĺžníkov z predchádzajúcej detekcie.
-Predpokladáme, že páry stredov tvorené zo stredov z aktuálnej a prechádzajúcej detekcie s najmenšou vzdielenosťou patria vždy rovnakej osobe. 
+Následne každý stred porovnávame so stredmi obĺžnikov z predchádzajúcej detekcie.
+Predpokladáme, že páry stredov tvorené zo stredov z aktuálnej a prechádzajúcej detekcie s najmenšou vzdialenosťou patria vždy rovnakej osobe. 
 Páry musia byť samozrejme disjunktné (každý stred patrí len do jedného páru).
-Pokiaľ niektorý nový stred nepatrí do žiadného páru, jedná sa o novú osobu, v prípade starého stredu sa naopak táto osoba na zázname už nenachádza.
+Pokiaľ niektorý nový stred nepatrí do žiadneho páru, jedná sa o novú osobu, v prípade starého stredu sa naopak táto osoba na zázname už nenachádza.
 Ak je vzdialenosť medzi niektorými pármi príliš veľká, takýto pár ignorujeme.
 
 Toto riešenie má dva hlavné problémy.
@@ -112,4 +112,12 @@ Uvázame krátky popis funkcionality súborov v projekte.
 \end{description}
 
 \section{Výsledky}
+WORK IN PROGRESS
 
+\subsection{Pred dotrénovaním}
+
+\subsection{Popis dotrénovania}
+
+\subsection{Po dotrénovaní}
+
+\subsection{Diskusia}

@@ -106,4 +106,3 @@ if production:
 
 if not confirm_match:
     keep_track_all = False
-
