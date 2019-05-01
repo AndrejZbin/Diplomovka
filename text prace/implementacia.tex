@@ -1,0 +1,115 @@
+\chapter{Implementácia aplikácie}
+\label{kap:implementacia}
+Finálna aplikácia je implementovaná v jazyku Python 3 s využitím knižnice OpenCV. 
+Dokáže súčasne prehrať záznamy uložené na disku vo forme videa alebo sledu obrázkov, záznam z webkamery a taktiež internetový stream.
+Osoby sú na týchto záznamoch detegované pomocou predtrénovanej neurónovej siete MobileNet-SSD, 
+ich tváre pomocou klasifikátora založeného na Haarových príznakoch implementovaného v knižnici OpenCV. 
+Na klasifikáciu osôb aplikácia využíva siamsku neurónovú sieť. 
+Sieť bola predtrénovaná na datasete ChokePoint pre klasifikáciu na základe tváre a na datasete DukeMTMC pre klasifikáciu na základe celého tela.
+Aplikácia umožňuje dotrénovanie sietí na prehrávaných záznamov, čim sa zvýši presnosť klasifikácie.
+Na vyhľadanie konkrétnej (známej) osoby v zázname stačí len jedna snímka tela alebo tváre danej osoby. 
+Okrem toho program dokáže identifikovať neznáme osoby, ktoré sa už predtým nachádzali v niektorom z prehrávaných záznamov.
+
+\section{Detekcia osoby a tváre}
+Detekciu osôb vykonávame každých 30 snímok. 
+Detekcia osoby je vykonávaná funkciou detect\_people v súbore detect.py. Parametrom funkcie je obrázok, na ktorom chceme osoby nájsť.
+Detekcia môže byť vykonaná pomocou histogramu orientovaných gradientov alebo pomocou neurónovej sieteMobileNet-SSD.
+Druhá možnosť sa v testovaní ukázala ako lepšia. 
+Okrem lepšej presnosti detekcie bola taktiež rýchlejšia ako prvá spomenutá možnosť.
+Výstupom funkcie je množina obdlžníkov, kde každý obdĺžnik ohraničuje jednu osobu na snímke. 
+Obĺžnik je reprezentovaný 4 bodmi - vrcholmi oblžníka.
+Pred vstupom do siete je obrázok normalizovaný na veľkosť 300x300. 
+Vďaka tomu je detekcia niekoľkonásobne rýchlejšia a pritom stále dostatočne presná.
+
+Detekcia tváre prebieha v aplikácii len na častiach snímok, na ktorých bola detegovaná osoba.
+Vďaka tomu je detekcia rýchla a vieme jednoducho určiť, ktorá tvár patrí ku ktorej osobe.
+Detekciu program vykonáva pomocou Haarových príznakov. 
+Táto metóda sa ukázala ako dostatočne presná na náš účel aj napriek občasným falošným detekciam.
+Pokiaľ je na snímke detegovaná viac ako jedna tvár, všetky detekcie jednoducho ignorujeme. 
+Síce tak prídeme aj o niekoľko správnych detekcií, ale pokiaľ je osoba na zázname dlhšie, tak táto strata problém nerobí.
+
+
+\section{Rozpoznanie osoby na videu}
+Rozpoznávanie vykonáva funkcia compare\_to\_detected v súbore recognize.py.
+Osoby rozpoznávame  kombináciou dvoch spôsobov: podľa snímov tváre a podľa snímov celého tela.
+Oba spôsoby využívajú rovnakú siamskú neurónovú sieť, ako sme popísali v kapitole [TODO]. 
+Pre každú osobu si uchovávame niekoľko záberov ich tváre a tela. 
+Staré zábery sú nahradené novšími, takže napríklad aj zmena oblečenia v zábere kamery nespôsobí väčší problém.
+V prípade, že hľadáme konkrétnu osobu, vytvoríme nový záznam a uložíme do neho zábery, podľa ktorých chceme danú osobu hľadať.
+Ak chceme osobu identifikovať, porovnáme ju so všetkými uloženými osobami podľa tváre a podľa tela.
+Jednotlivé výsledky pre tvár a telo spriemerujeme (je možné nastaviť pomer, ako výsledkom veríme, základný je 1:1), nájdeme najväčšiu zhodu a pokiaľ je táto zhoda väčšia ako nastavený parameter, určíme, že sa jedná o tú istú osobu.
+Zhodu tváre aj tela pre dve osoby spočítame tak, že pomocou siamskej siete zistíme zhodu medzi každými dvomi uloženými zábermi daných osôb.
+Zhoda je reálne číslo medzi 0 a 1.
+Taktiež je možné nastaviť hodnotu threshold a zhodu pretransformovať len na hodnoty 0 (ak je zhoda menšia ako threshold) a 1 (inak).
+Ak nastavíme threshold väčší, vyhneme sa falošným zhodám, avšak môžeme prísť o niektoré pravé zhody.
+
+
+
+Pre zlepšenie presnosti je možné sieť dotrénovať na záberoch z kamier, na ktorých chceme program používať.
+Pri dotrénovaní sa využívajú predtrénované modely z kapitoly [TODO].
+Pri každom rozhodnutí, či sa jedná o rovnakú osobu, sa používateľovi zobrazí možnost toto rozhodnutie potvrdiť alebo zamietnuť.
+Pokial používateľ zamietne, môže sa mu zobraziť ďalšia najbližšia zhoda (podľa konfiguráciu).
+Týmto spôsobom vybudujeme nový dataset, ktorý využijeme na dotrénovanie rovnako, ako v kapitole [TODO].
+
+Ukázalo sa, že v reálnej prevádzke toto riešenie výrazne zlepšuje presnosť rozpoznávania.
+Je to spôsobené tým, že v novom datasete majú kamery rovnaké pozície ako v reálnej prevádzke, a tým pádom sú osoby zväčša snímané v podobných uhloch v porovnaní s datasetom DukeMTMC.
+Vďaka predtrénovaniu je potrebný pri trénovaní výrazne menši počet iteracií.
+
+\section{Sledovanie osoby na jednom videozázname}
+Po každej detekcii osoby získame nové obdĺžniky ohraničujúce telo osoby na snímke. 
+Strácame však informáciu o tom, ktorej osobe daný obĺžnik patrí.
+Inak povedané, ak je po prvej detekcii osoba ohraničená obdĺžnikom, tak po ďalšej detekcii nevieme povedať, ktorý nový obdĺžnik ohraničuje tú istú osobu.
+Jednou možnosťou, ako tento problém riešiť, je po každej detekcii osôb znova klasifikovať každú detegovanú osobu na snímke.
+Hlavným problémom tohto riešenia je jeho časová zložitosť. 
+Podľa počtu hľadaných alebo predtým videných osôb na zázname by porovnanie medzi každým z nich mohlo trvať až niekoľko sekúnd.
+Takéto riešenie je neakceptovateľné, pokiaľ sledujeme osoby na videozázname v reálnom čase. 
+
+Problém sme vyriešili algoritmom centroid tracking [TODO CITE].
+Pre každý obdĺžnik vypočítame jeho stred. 
+Následne každý stred porovnanáme so stredmi obĺžníkov z predchádzajúcej detekcie.
+Predpokladáme, že páry stredov tvorené zo stredov z aktuálnej a prechádzajúcej detekcie s najmenšou vzdielenosťou patria vždy rovnakej osobe. 
+Páry musia byť samozrejme disjunktné (každý stred patrí len do jedného páru).
+Pokiaľ niektorý nový stred nepatrí do žiadného páru, jedná sa o novú osobu, v prípade starého stredu sa naopak táto osoba na zázname už nenachádza.
+Ak je vzdialenosť medzi niektorými pármi príliš veľká, takýto pár ignorujeme.
+
+Toto riešenie má dva hlavné problémy.
+Keďže detekcia je vykonávaná len každých tridsať snímkov, nové obdĺžniky získame tiež každých tridsať snímkov.
+Preto najkratšia vzdialenosť nemusí nutne znamenať rovnakú osobu, napríklad pokiaľ osoby prejdú oproti sebe.
+Okrem tohto riešenia sme využili aj sledovanie, ktoré sa vykonáva každú snímku za využitia correlation tracker-u z knižnice dlib.
+Vďaka tomuto sledovaniu získame nové obĺžniky každú snímku a tým pádom je centroid tracker oveľa presnejší, keďže vzialenosti medzi správnymi pármi stredov sú oveľa menšie.
+
+Ďalší problém môže nastať, pokiaľ osoba odíte zo záberu kamery a v rovnakom čase a na rovnakom mieste príde do záberu iná osoba.
+V takomto prípade by algoritmus vyhodnotil, že sa jedná o tú istú osobu.
+Preto po každej detekcií porovnáme nájdenú osobu s osobou, ktorej identita je jej pridelená popísaným spôsobom.
+Pokiaľ sa nezhoduje, jedná sa o novú osobu.
+
+\section{Štruktúra projektu a jeho spustenie}
+Uvázame krátky popis funkcionality súborov v projekte.
+\begin{description}
+\item[centroid\_tracker.py] tracker umožňujúci uchovanie ID pre osoby medzi jednotlivými snímkami videa
+\item[config.py] konfiguračné premenné
+\item[detect.py] funkcie pre detekciu postavy a tváre
+\item[download\_dataset.py] stiahne všetky nutné datasety a uloží ich do správneho formátu.
+\item[feature\_extractors.py] funkcie na extrakciu príznakov obrázku
+\item[feature\_test.py] testovanie extrahovaných príznakov
+\item[help\_functions.py] pomocné funkcie, ako je načítanie obrázkov a podobne
+\item[improve.py] umožnuje vylepšovať model na základe novo-získaných dát
+\item[person\_track.py] trieda obsahujúca informácie, na základne ktorých vieme osobu identifikovať
+\item[play.py] prehrávanie videa a detekcia/respoznávanie osôb v ňom
+\item[players.py] triedy umožňujúce rôzne formáty videa (obrázky, video, stream z kamery, video na youtube)
+\item[recognize.py] funkcie umožňujuce rozpoznanie osôb na videu
+\item[requirements.txt] nutné python knižnice
+\item[retinex.py] filter na úpravu obrázky (nie môj kód)
+\item[siamese\_network.py] siamska konvolučná neurónová sieť
+\item[test.py] testovanie natrénovaného modelu siamskej siete
+\item[train.py] trénovanie modelu siamskej siete
+\item[train\_help\_functions.py] pomocné funkcie na trénovanie (generovanie dát)
+\item[ChokePoint] obsahuje snímky datasetu ChokePoint, zložka je automaticky vytvorená
+\item[DukeMTMC-reID] obsahuje snímky datasetu DukeMTMC, zložka je automaticky vytvorená
+\item[known\_people] obsahuje snímky osôb, ktoré chceme na videozáznamoch hľadať
+\item[mobilenet\_ssd] obsahuje neurónovú sieť MobileNet-SSD
+\item[model\_history] obsahuje predtrénované modely na rozpoznávanie osôb
+\end{description}
+
+\section{Výsledky}
+
