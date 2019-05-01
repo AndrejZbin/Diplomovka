@@ -15,7 +15,7 @@ def train_body():
         config.train_body_folder, preprocess=help_functions.prepare_body)
 
     # Hyper-parameters
-    people_count = 10
+    people_count = 8
     iterations = 60000
     checkpoint = 20
     save_checkpoint = 10000
@@ -45,7 +45,7 @@ def train_face():
 
     # Hyper-parameters
     people_count = 8
-    iterations = 80000
+    iterations = 25000
     checkpoint = 20
     save_checkpoint = 10000
 
