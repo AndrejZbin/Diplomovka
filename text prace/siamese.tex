@@ -1,7 +1,10 @@
-\chapter{Klasifikácia pomocou siamskej konvolučnej neurónovej siete}
+\chapter{Klasifikácia pomocou siamskej neurónovej siete}
 \label{kap:siamese}
-\section{Siamska neurónová sieť}
-Siamska neurónová sieť je typ neurónovej siete, ktorá je zložená z dvoch rovnakých podsietí. 
+V tejto kapitole popíšeme možnosti využitia siamskej neurónovej siete na problém rozpoznávania osôb.
+Ukážeme dve riešenia tohto problému: rozpoznávanie podľa záberov tvárí a záberov celého tela.
+
+\section{Siamská neurónová sieť}
+Siamská neurónová sieť je typ neurónovej siete, ktorá je zložená z dvoch rovnakých podsietí. 
 Tieto podsiete majú okrem architektúry aj rovnaké váhy v jednotlivých vrstvách.
 Úlohou siamskej architektúry nie je priamo klasifikovať vstup.
 Ich hlavné využitie je nájdenie podobnosti medzi dvomi vstupmi.
@@ -11,20 +14,20 @@ Inak povedané, vstupy sú si podobné práve vtedy, keď je vzdialenosť medzi 
 
 \begin{figure}[H]
 \centerline{\includegraphics[width=0.8\textwidth]{images/siamese_diagram}}
-\caption[Siamska neurónová sieť]{Jednoduchá architektúra siamskej neurónovej siete}
+\caption[Siamska neurónová sieť]{Jednoduchá architektúra siamskej neurónovej siete s konvolučnými podsieťami.}
 \label{obr:siamese_diagram}
 \end{figure}
 
 Vzdialenosť \textit{d} medzi dvoma vektormi $p = (p_1, p_2, ..., p_n)$ a $q = (q_1, q_2, ..., q_n)$ 
-môžeme merať viacerými spôsobmi. Uvázdame dve najpopulárnejšie metriky.
+môžeme merať viacerými spôsobmi. Uvádzame dve najpopulárnejšie metriky.
 
 \begin{description}
 \item[Manhattanovská vzdialenosť]
-Vzialenosť dvoch vektorov je súčet absolutúnych hodnôt rozdielov ich kartézkych súradníc.
+Vzdialenosť dvoch vektorov je súčet absolútnych hodnôt rozdielov ich kartézkych súradníc.
 $$d(p, q) = \sum_{i=1}^{n} \| p_i - q_i \|$$
 
 \item[Euklidovská vzdialenosť]
-Vzialenosť dvoch vektorov je dĺžka úsečky spájajúcej dva body reprezentované danými vektormi v n-rozmernom priestore.
+Vzdialenosť dvoch vektorov je dĺžka úsečky spájajúcej dva body reprezentované danými vektormi v n-rozmernom priestore.
 $$d(p, q) = \sqrt{ \sum_{i=1}^{n} ( p_i - q_i )^2}$$
 \end{description}
 
@@ -33,9 +36,9 @@ Obe uvedené metriky majú niekoľko dobrých vlastností.
 \begin{description}
 \item[Symetria] Dva vstupy sú si rovnako podobné bez ohľadu na to, do ktorej podsiete vstupujú. 
 $$d(p, q) = d(q, p) $$
-\item[Trojuholníková nerovnosť] Vysoká podobnosť vstupu s ďalšími dvomi vstupmi zaručí, že aj tieto vstupy sí budú dostatočne podobné.
+\item[Trojuholníková nerovnosť] Vysoká podobnosť vstupu s ďalšími dvomi vstupmi zaručí, že aj tieto vstupy si budú dostatočne podobné.
 $$d(p, q) 	\leq d(p, z) + d(z, q)$$
-\item[Nezápornosť a nulová vzdialenosť pre rovnaké vektory] Rovnaké vstupy dosahujú maximálnu podobnosť.
+\item[Nezápornosť a nulová vzdialenosť pre rovnaké vektory] Navzájom rovnaké vstupy dosahujú maximálnu podobnosť.
 $$d(p, q) \geq 0$$
 $$d(p, q) = 0 \Rightarrow p = q$$
 \end{description}
@@ -47,14 +50,14 @@ Takýto prístup má niekoľko nevýhod.
 
 Hlavným problémom je klasifikácia nových alebo neznámych osôb. 
 Môžeme vytvoriť špeciálnu triedu, do ktorej budú patriť všetky neznáme osoby.
-Ak však chceme klasifikovať viac ako jednu novú osobu a vyžadujeme, aby každá osoba bola zaradená do inej triedy, táto trieda nám nepomôže.
+Ak však chceme klasifikovať viac ako jednu novú osobu a vyžadujeme, aby každá osoba bola zaradená do inej triedy, takáto trieda nám nepomôže.
 Bude potrebné znova natrénovať sieť aj s novými osobami.
 Takáto situácia môže nastať napríklad v podniku, ktorý sleduje prítomnosť svojich zamestnancov.
 Pokiaľ firma zamestná nové osoby, bez opätovného trénovania siete ich nebude možné správne klasifikovať.
-Existujú však situácie, kedy dopredu nevieme, aké a koľko osôb vlastne klasifikovať budeme a opätovné trénovanie siete teda nie je môžné.
+Existujú však situácie, kedy dopredu nevieme, aké a koľko osôb vlastne klasifikovať budeme a opätovné trénovanie siete teda nie je možné.
 
 Ďalšou nevýhodou je, že aj pokiaľ sieť bude znova natrénovaná, na jej trénovanie je potrebný veľký počet záberov nových osôb, ktoré chceme klasifikovať.
-Tieto zábery musia zachytávať nové osoby z rôznych uhlov a v rôznych polohách, čo v niektorých situáciach nemusí byť realizovateľné.
+Tieto zábery musia zachytávať nové osoby z rôznych uhlov a v rôznych polohách, čo v niektorých situáciách nemusí byť realizovateľné.
 
 Klasifikácia pomocou siamskej neurónovej siete rieši všetky spomenuté problémy.
 Po natrénovaní siete nám pre každú triedu stačí uchovávať len jeden vstup, ktorý do tejto triedy patrí a danú triedu reprezentuje.
@@ -68,52 +71,37 @@ Klasifikácia prebieha jednoducho: ak je vstup, ktorý chceme klasifikovať, dos
 \label{obr:oneshot_classification}
 \end{figure}
 
-\section{Architektúra siete}
-Oboje siete, na klasifikáciu podľa tváre a podľa celého tela, používajú tú istú architektúru.
-Vstupom do siete pre klasifikáciu podľa tváre sú čiernobiele obrázky veľkosti 105x105 a 
-do siete pre klasifikáciu podľa celého tela farebné obrázky o veľkosti 65x155 s troma kanálmi farieb RGB.
+\section{Architektúra siete} \label{kap:siamese_architecture}
+Oboje siete, na hľadanie podobnosti tvárí a na hľadanie podobnosti celých tiel, používajú tú istú architektúru.
+Architektúra siete bola inšpirovaná sieťou určenou na klasifikáciu znakov v rôznych abecedách \cite{siamese_architecture}.
+Vstupom do siete pre hľadanie podobnosti tvárí sú čiernobiele obrázky veľkosti 105x105 a 
+do siete pre hľadanie podobnosti celých tiel sú farebné obrázky o veľkosti 65x155 s troma kanálmi farieb RGB.
 
-Siet obsahuje štyri konvolučné vrstvy, ktoré majú postupne 64, 128, 128 a 256 filtrov s veľkosťami kernelu 10x10, 7x7, 4x4 a 4x4.
+Sieť obsahuje štyri konvolučné vrstvy, ktoré majú postupne 64, 128, 128 a 256 filtrov s veľkosťami kernelu 10x10, 7x7, 4x4 a 4x4.
 Medzi nimi sa nachádzajú max pooling vrstvy, ktoré redukujú každú dimenziu na polovicu.
-Po každej max pooling vrstve nasleduje dropout s pravdepodobnosťou 15\% aby sme predišli preučeniu.
+Max pooling funguje nasledovne: vstupnú maticu rozdelí na regióny rovnakej veľkosti (v našom prípade 2x2). 
+Nová matica bude obsahovať len maximálne hodnoty v každom regióne.
+Po každej max pooling vrstve nasleduje dropout s pravdepodobnosťou 15\% aby sme predišli preučeniu \cite{JMLR:v15:srivastava14a}. 
 Ako aktivačné funkcie v konvolučných vrstvách využívame funkciu ReLU. 
-Výstupom tejto funkcie je vstupný vektor, v ktorom sú všetky záporné hodnoty nahradené 0.
+Výstupom tejto funkcie je jej vstupný vektor, v ktorom sú všetky záporné hodnoty nahradené 0.
 
 Po týchto vrstvách nasleduje plne-prepojená vrstva, jej výstupom je vektor o veľkosti 4096.
 Takéto vektory vstupujú do ďalšej vrstvy dva, jeden z každej podsiete siamskej siete.
-Vypočítame manhattanovskú vzdialenosť medzi nimi a výslednú vzdialenosť pretransformujeme na hodnoty z intervalu <0, 1>, 
+Vypočítame manhattanovskú vzdialenosť medzi nimi a výslednú vzdialenosť pretransformujeme pomocou sigmoid funkcie $S(x) = \frac{1}{1 + e^-x}$ na hodnoty z intervalu <0, 1>, 
 kde jednotka značí maximálnu a nula minimálnu podobnosť vstupov do siete.
 
 \begin{figure}[H]
 \centerline{\includegraphics[width=1\textwidth]{images/siamese_architecture}}
-\caption[Architektúra siete pre klasifikácia tváre]{Ukážka jednotlivých vrstiev sieti pre klasifikáciu podľa tváre}
+\caption[Architektúra siete pre hľadanie podobností tvárí]{Ukážka jednotlivých vrstiev sieti pre hľadanie podobností tvárí}
 \label{obr:siamese_architecture}
 \end{figure}
 
-\section{Trénovanie siete}
+\section{Trénovanie siete} \label{kap:siamese_train}
 \subsection{Datasety}
-Na trénovanie siete pre indentifikáciu osôb podľa snímky celého teľa sme využili dataset DukeMTMC-reID.
-Jedná sa o upravenú verziu datasetu DukeMTMC.
-Pôvodný dataset obsahuje videozáznamy z ôsmich rôznych kamier.
-V upravenej verzii sú zábery jednotlivých osôb vyrezané z každej stodvadsiatej snímky pôvodného záberu.
-Takto je získaných 1 404 identít, ktoré sa vyskytujú aspoň na dvoch kamerách a 408 identít vyskytujúcich sa práve na jednej kamere.
-Náhodne vybraná polovica osôb, ktoré sa vyskytujú na viacerých záberoch, je zvolená ako trénovacia množina, zvyšné zábery patria do testovacej množiny.
+Na trénovanie siete pre hľadanie podobnosti podľa snímok celých tiel sme opäť využili dataset DukeMTMC-reID \cite{ristani2016MTMC} \cite{zheng2017unlabeled} spomenutý v kapitole \ref{kap:features}.
 
-\begin{figure}[H]
-\centerline{\includegraphics[width=0.9\textwidth]{images/duke_topology}}
-\caption[Topológia kamier]{Oblasti, ktoré zachytávajú jednotlivé kamery v datasete DukeMTMC}
-\label{obr:duke_topology}
-\end{figure}
-
-\begin{figure}[H]
-\centerline{\includegraphics[width=0.9\textwidth]{images/duke_same}}
-\caption[Ukážka datasetu]{Zábery jednej osoby z rôznych kamier v datasete DukeMTMC-reID}
-\label{obr:duke_same}
-\end{figure}
-
-
-Na rozpoznávanie podľa tváre sme zvolili iný dataset, pretože zábery v datasete DukeMTMC-reID nemajú dostatočné rozlíšenie na natrénovanie klasifikátora.
-Vybrali sme dataset ChokePoint. 
+Na hľadanie podobnosti tvárí sme zvolili iný dataset, pretože zábery v datasete DukeMTMC-reID nemajú dostatočné rozlíšenie na natrénovanie siete.
+Vybrali sme dataset ChokePoint \cite{wong_cvprw_2011}. 
 Tento dataset obsahuje zábery nasnímané v rozpätí jedného mesiaca pomocou trojíc kamier umiestnených na viacerých miestach.
 Celkovo zachytáva 29 rôznych identít na celkovo 64 204 snímkach ich tvárí.
 Zábery sme rozdelili na trénovaciu a testovaciu množinu.
@@ -130,11 +118,23 @@ Trénovacia množnina celkovo obsahuje 11 323 snímok, trénovacia 52 247 snímo
 Ako stratovú funkciu sme zvolili binárku cross entropiu medzi predikciami a očakávanými hodnotami.
 Formálne, chybová funkcia L je definovaná:
 $$L(p, q) = t(p, q) * log(s(p, q)) + (1 - t(p, q)) * log(1 - s(p, q))$$
-$$t(p, q) = 1\ ak\ p\ a\ q\ patria\ do\ rovnakej\ triedy,\ inak\ 0$$
+\[
+  t(p, q) =
+  \begin{cases}
+    1 & \text{ak p a q patria do rovnakej triedy} \\
+    0 & \text{inak}
+  \end{cases}
+\]
 $$s(p, q) = predikcia\ podobnosti$$
 Vyskúšali sme použiť aj kontrastnú stratu L`.
 $$L`(p, q) = \frac{1}{2} * t(p, q) * max(0, m - D(p, q))^2 + \frac{1}{2}*(1 - t(p, q)) * D(p, q)^2$$
-$$t(p, q) = 1\ ak\ p\ a\ q\ patria\ do\ rovnakej\ triedy,\ inak\ 0$$
+\[
+  t(p, q) =
+  \begin{cases}
+    1 & \text{ak p a q patria do rovnakej triedy} \\
+    0 & \text{inak}
+  \end{cases}
+\]
 $$D(p, q) = predikcia\ vzdialenosti$$
 $$m = hyperparameter$$
 Dosiahnuté výsledky pri učení však boli v porovnaní s cross entropiou výrazne horšie po rovnakej časovej dobe učenia.
@@ -144,7 +144,7 @@ Na minimalizáciu chyby sme použili optimalizátor Adam s rýchlosťou učenia 
 Vyššie hodnoty spôsobovali príliš veľké kolísanie chyby medzi jednotlivými iteráciami, čo paradoxne spôsobilo pomalšie učenie.
 
 \subsection{Popis trénovania}
-Trénovanie prebiehalo v 25 000 iteráciach v prípade rozpoznávania podľa tváre a v 60 000 iteráciach v prípade rozpoznávania podľa celého tela.
+Trénovanie prebiehalo v 25\,000 iteráciách v prípade hľadania podobnosti tvárí a v 60\,000 iteráciách v prípade hľadania podobnosti celých tiel.
 V každej iterácii sme zvolili osem osôb.
 Pre každú osobu bol zvolený jeden náhodný záber.
 Následne sme z každej kamery sme vybrali jeden záber, ktorý zachytáva tú istú osobu a jeden záber, ktorý zachytáva inú osobu.
@@ -155,13 +155,13 @@ Rovnako bol porovnávaný s každým vybraným záberom iných osôb s očakáva
 
 \begin{figure}[H]
 \centerline{\includegraphics[width=1\textwidth]{images/graph_learn_face.png}}
-\caption[Priebeh učenia rozpoznávania podľa tváre]{Priebeh učenia rozpoznávania podľa tváre. Z grafu vidieť, že na natrénovanie siete stačí aj menší počet iterácií na dosiahnutie dobrej presnosti.}
+\caption[Priebeh učenia hľadania podobnosti tvárí]{Priebeh učenia hľadania podobnosti tvárí. Z grafu vidieť, že na natrénovanie siete stačí aj menší počet iterácií na dosiahnutie dobrej presnosti.}
 \label{obr:graph_learn_face}
 \end{figure}
 
 \begin{figure}[H]
 \centerline{\includegraphics[width=1\textwidth]{images/graph_learn_body.png}}
-\caption[Priebeh učenia rozpoznávania podľa tela]{Priebeh učenia rozpoznávania podľa tela. Na natrénovanie je potrebný väčší počet iterácií, ale sieť dosahuje dobrú presnosť na trénovacích príkladoch.}
+\caption[Priebeh učenia hľadania podobnosti tiel]{Priebeh učenia hľadania podobnosti tiel. Na natrénovanie je potrebný väčší počet iterácií, ale sieť dosahuje dobrú presnosť na trénovacích príkladoch.}
 \label{obr:graph_learn_body}
 \end{figure}
 
@@ -170,47 +170,47 @@ Rovnako bol porovnávaný s každým vybraným záberom iných osôb s očakáva
 
 \subsection{Meranie úspešnosti}
 Kvalitu siete ukážeme pomocou chybovej tabuľky, ktorá má dva stĺpce a dva riadky, zobrazujúcej
-správne zhody, nesprávne zhody, správne nezhody a nesprávne nezhody na náhodne vybraných dvojiciach obrázkov.
+správne zhody, nesprávne zhody, správne nezhody a nesprávne nezhody na náhodne vybraných dvojiciach obrázkov \cite{roc}.
 
 \begin{description}
-\item[správna zhoda (TP)]
-snímky na vstupe patria rovnakej osobe a sieť rozhodla správne.
+\item[Správna zhoda (TP)]
+Snímky na vstupe patria rovnakej osobe a sieť rozhodla správne (podobnosť bola vysoká).
 
-\item[nesprávna zhoda (FP)]
-sieť rozhodla, že snímky na vstupe patria rovnakej osobe, avšak v skutočnosti zachytávajú rôzne osoby
+\item[Nesprávna zhoda (FP)]
+Sieť rozhodla, že snímky na vstupe patria rovnakej osobe, avšak v skutočnosti zachytávajú rôzne osoby
 
-\item[správna nezhoda (TN)]
-snímky na vstupe nepatria rovnakej osobe a sieť rozhodla správne.
+\item[Správna nezhoda (TN)]
+Snímky na vstupe nepatria rovnakej osobe a sieť rozhodla správne (podobnosť bola nízka).
 
-\item[nesprávna nezhoda (FN)]
-sieť rozhodla, že snímky na vstupe zachytávajú rôzne osoby, no v skutočnosti patri tej istej osobe.
+\item[Nesprávna nezhoda (FN)]
+Sieť rozhodla, že snímky na vstupe zachytávajú rôzne osoby, no v skutočnosti patri tej istej osobe.
 \end{description}
 
 Z týchto hôdnot odvodíme ďalšie hodnoty, ktoré dobre ukazujú kvalitu siete.
 
 \begin{description}
-\item[presnosť (ACC)] pravdepodobnosť správneho rozhodnutia siete na ľubovoľných príkladoch.
+\item[Presnosť (ACC)] Pravdepodobnosť správneho rozhodnutia siete na ľubovoľných príkladoch.
 $$ACC = \frac{TP + TN}{TP + FP + TN + FN}$$
-\item[senzitivita (TPR)] pravdepodobnosť správneho rozhodnutia na príkladoch, kedy vstupné snímky patrili rovnakej osobe.
+\item[Senzitivita (TPR)] Pravdepodobnosť správneho rozhodnutia na príkladoch, na ktorých vstupné snímky patrili rovnakej osobe.
 $$TPR = \frac{TP}{TP + FN}$$
-\item[špecificita (TNR)] pravdepodobnosť správneho rozhodnutia na príkladoch, kedy vstupné snímky nepatrili rovnakej osobe.
+\item[Špecificita (TNR)] Pravdepodobnosť správneho rozhodnutia na príkladoch, na ktorých vstupné snímky nepatrili rovnakej osobe.
 $$TNR = \frac{TN}{TN + FP}$$
-\item[precíznosť (PPV)] pomer správnych rozhodnutí na príkladoch, kedy vstupné snímky patrili rovnakej osobe k počtu rozhodnutí, v ktorých sieť určila, že vstupné snímky patrili rovnakej osobe.
+\item[Precíznosť (PPV)] Pomer správnych rozhodnutí na príkladoch, na ktorých vstupné snímky patrili rovnakej osobe, k počtu rozhodnutí, v ktorých sieť určila, že vstupné snímky patrili rovnakej osobe.
 $$PPV = \frac{TP}{TP + FP}$$
-\item[negatívna predikčná hodnota (NPV)] pomer správnych rozhodnutí na príkladoch, kedy vstupné snímky nepatrili rovnakej osobe k počtu rozhodnutí, v ktorých sieť určila, že vstupné snímky nepatrili rovnakej osobe
+\item[Negatívna predikčná hodnota (NPV)] Pomer správnych rozhodnutí na príkladoch, na ktorých vstupné snímky nepatrili rovnakej osobe, k počtu rozhodnutí, v ktorých sieť určila, že vstupné snímky nepatrili rovnakej osobe
 $$NPV = \frac{TN}{TN + FN}$$
 \end{description}
 
 Následne vyskúšame priamo klasifikovať osobu.
-Každá trieda bude reprezontovať inú osobu len jedným záberom.
+Každá trieda bude reprezentovať inú osobu len jedným záberom.
 Vyberie jednu z týchto osôb a nejaký iný záber tejto osoby a tento záber porovnáme so zábermi každej triedy.
-Osobu klasifikujeme do triedy s najväčšou zhodou.
+Osobu klasifikujeme do triedy s najväčšou podobnosťou.
 
-\subsection{Výsledky pre klasifikáciu podľa tváre}
+\subsection{Výsledky pre hľadanie podobnosti tvárí}
 
-Na testovacej databáze záberov tvárí sme dosiahli dobré výsledky vhľadom na precíznosť a špecificitu.
+Na testovacej databáze záberov tvárí sme dosiahli dobré výsledky vzhľadom na precíznosť a špecificitu.
 Ak sieť určí, že vstupné snímky patria rovnakej osobe, s pravdepodobnosťou viac ako 92\% je to pravda.
-Rovnako, ak snímky nezachytávajú rovnakú osobu, sieť s pravdepodobnosťou až 95\% spraví správne rozhodne.
+Rovnako, ak snímky nezachytávajú rovnakú osobu, sieť s pravdepodobnosťou až 95\% spraví správne rozhodnutie.
 Hlavným problémom sa ukazujú falošné nezhody.
 Ak je na záberoch rovnaká osoba, sieť spraví správne rozhodnutie len v 59\% prípadov.
 
@@ -219,7 +219,7 @@ Ak by sme chceli znížiť počet falošných nezhôd a nevadia nám falošné z
 
 
 \begin{table}[H]
-  \caption[Úspešnosť rozpoznávania podľa tváre]{Úspešnosť rozpoznávania podľa tváre bez akéhokoľvek zmenšovania.}
+  \caption[Úspešnosť hľadania podobnosti tvárí]{Úspešnosť hľadania podobnosti tvárí bez akéhokoľvek zmenšovania.}
   \label{tbl:face1_table}
   \begin{center}
   \includegraphics{images/face1_table}
@@ -230,27 +230,39 @@ Výsledky klasifikácie do tried sme porovnali s modelom, ktorý vstup klasifiku
 
 \begin{figure}[H]
 \centerline{\includegraphics[width=1\textwidth]{images/graph_oneshot_face.png}}
-\caption[Výsledky klasifikácie podľa tváre]{Graf porovnáva úspešnosť klasifikácie pomocou siemskej siete s náhodným modelom pre rôzne počty klasifikačných tried.}
+\caption[Výsledky klasifikácie podľa tváre]{Graf porovnáva úspešnosť klasifikácie pomocou siamskej siete s náhodným modelom pre rôzne počty klasifikačných tried.}
 \label{obr:graph_oneshot_face}
 \end{figure}
 
 
-Následne sme vyskúšali hľadanie zhody aj na záberoch tvárí s menším rozlíšením.
-Zábery v testovacom datasete sme náhodne zmenšili a sledovali sme, či sa zmení presnosť.
-Keďže trénovanie prebiehalo len na záberoch v rovnakom rozlíšení, preučeniu sa nepodarilo vyhnúť a presnosť sa výrazne znížila.
-Preto sme skúsili znova natrénovať sieť, no tentokrát sme náhodne zmenšili aj trénovacie dáta.
-
-Dosiahli sme vyššiu presnosť aj na záberoch v nižšom rozlíšení. 
-Dôležité však bolo, že presnosť neklesla pri testovaní na záberoch v plnom rozlíšení oproti pôvodnému modelu, a teda môžeme povedať, že nový model je lepší.
+Následne sme vyskúšali hľadanie podobnosti aj na záberoch tvárí s menším rozlíšením.
+Zábery v testovacom datasete sme zmenšili na tretinu v oboch rozmeroch a sledovali sme, či sa zmení presnosť.
+Keďže trénovanie prebiehalo len na záberoch v rovnakom rozlíšení, sieť sa mohla preučeniť na danom rozlíšení a presnosť sa mohla výrazne znížiť.
+Zmena v meraných hodnotách však bola zanedbateľná.
+Ak by však zmena nastala, jednoduchým riešením by bolo sieť znova natrénovať na rovnakých záberoch, ktoré by sme náhodne zmenšovali.
 
 
 
+\begin{table}[H]
+  \caption[Úspešnosť hľadania podobnosti tvárí na zmenšených snímkach]{Úspešnosť hľadania podobnosti tvárí na zmenšených snímkach.}
+  \label{tbl:face1_table}
+  \begin{center}
+  \includegraphics{images/face2_table}
+  \end{center}
+\end{table}
 
-\subsection{Výsledky pre klasifikáciu podľa tela}
-Pri rozpoznávaní podľa teľa sme dosiahli podobné výsledky ako pri rozpoznávaní podľa tváre.
+\begin{figure}[H]
+\centerline{\includegraphics[width=0.9\textwidth]{images/graph_face12_compare.png}}
+\caption[Porovnanie hľadania podobnosti tvárí na snímkach pôvodnej a zmenšenej veľkosti]{Graf porovnáva hľadanie podobnosti tvárí na snímkach pôvodnej a zmenšenej veľkosti.}
+\label{obr:graph_face12_compare}
+\end{figure}
+
+
+\subsection{Výsledky pre hľadania podobnosti tiel}
+Pri hľadania podobnosti tiel sme dosiahli podobné výsledky ako pri hľadania podobnosti tvárí.
 Dosahujeme však menší počet falošných nezhôd.
 \begin{table}[H]
-  \caption[Úspešnosť rozpoznávania podľa tela]{Úspešnosť rozpoznávania podľa tela.}
+  \caption[Úspešnosť hľadania podobnosti tiel]{Úspešnosť hľadania podobnosti tiel.}
   \label{tbl:body1_table}
   \begin{center}
   \includegraphics{images/body1_table}
@@ -261,8 +273,12 @@ Výsledky klasifikácie do tried sme taktiež porovnali s modelom, ktorý vstup 
 
 \begin{figure}[H]
 \centerline{\includegraphics[width=1\textwidth]{images/graph_oneshot_body.png}}
-\caption[Výsledky klasifikácie podľa tela]{Graf porovnáva úspešnosť klasifikácie pomocou siemskej siete s náhodným modelom pre rôzne počty klasifikačných tried.}
+\caption[Výsledky klasifikácie podľa tela]{Graf porovnáva úspešnosť klasifikácie pomocou siamskej siete s náhodným modelom pre rôzne počty klasifikačných tried.}
 \label{obr:graph_oneshot_body}
 \end{figure}
 
-
+\subsection{Diskusia}
+Z dosiahnutých výsledkov môžeme povedať, že oboje riešenia sa dajú využiť v systéme na sledovanie osoby vo viacerých záznamoch.
+Problémom, ktorý treba vyriešiť, však zostávajú falošné nezhody, ktoré sú pri prechode osoby medzi zábermi dvoch kamier a jej následnej reidentifikácii dôležité.
+Ich elimináciou by sme docielili správnu reidentifikáciu osoby na druhom zázname.
+Riešením by mohla byť kombinácia riešení navrhnutých v tejto kapitole.

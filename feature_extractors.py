@@ -12,9 +12,9 @@ import config
 def save_features(images, save_location):
     f = open(save_location, 'w')
     for (image, file) in images:
-            features = extract_divide(image)
-            person_id, camera_id, _ = help_functions.info_from_image_name(file)
-            f.write(' '.join(map(str, features)) + (' ' + str(person_id) + ' ' + str(camera_id) + '\n'))
+        features = extract_divide(image)
+        person_id, camera_id, _ = help_functions.info_from_image_name(file)
+        f.write(' '.join(map(str, features)) + (' ' + str(person_id) + ' ' + str(camera_id) + '\n'))
     f.close()
 
 
@@ -24,11 +24,11 @@ def extract_divide(image, size=10):
         raise NotImplemented()
     width, height = config.body_image_resize
     image = help_functions.prepare_body_retinex(image)
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     result = []
 
-    siltp1 = scale_invariant_ltp(gray, 0.3, 4, 3)
+    siltp1 = scale_invariant_ltp(gray, 0.3, 4, 5)
     siltp2 = scale_invariant_ltp(gray, 0.3, 4, 3)
 
     for y in range(0, height-size+1, 5):
