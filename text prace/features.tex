@@ -148,7 +148,52 @@ Vhodnú hodnotu je možné nájsť experimentovaním \cite{knn}.
 Hlavnou nevýhodou je jeho rýchlosť. 
 Pri veľa dátach v trénovacej množite je metóda pomalá, keďže je pri každej klasifikácii počítať vzdialenosť pre každé pozorovanie v tejto množine.
 
-\subsection{SVM}
+\subsection{Metóda podporných vektorov}
+Pomocou metódy podporných vektorov (SVM) vieme klasifikovať do dvoch tried.
+Príznaky, podľa ktorých chceme klasifikovať, sú reprezentované ako vrcholy v priestore.
+Úlohou SVM je nájsť nadrovinu, ktorá tento priestor rozdelí na dva podpriestory, pričom v každom podpriestore sa nachádzajú len príznaky patriace do jednej triedy.
+Vzdialenosť všetkých príznakov by mala byť od rozdelovacej nadroviny čo najväčšia.
+
+V prípade, že takáto nadrovina neexistuje, je možné uplatniť transformáciu, ktorá priestor príznakov prevedie do vyššej dimenzie, v ktorej už existovať bude.
+V tomto prípade hovoríme o nelineárnom SVM.
+
+Klasifikácia je oproti metóde nejabližších susedov rýchlejšia.
+Pokiaľ chceme klasifikovať nové pozorovanie, stačí zistiť, do ktorého podpriestoru patrí nový vektor príznakov.
+
+Klasifikácia do viacerých tried je možná zostrojením SVM pre každú triedu a následnom binárnom rozhodnutí, či príklad patrí do tejto triedy alebo nie \cite{svm}. 
+Pr
+
 \subsection{Výsledky}
-S retinex a bez
+Z výsledkov testovania vidieť, že využitie retinexu pri klasifikácii pomáha vo všetkých prípadoch.
+Metóda najbližších susedov dosahuje najlepšie výsledky pri 300 PCA komponentoch a hľadaní len jedného najbližšieho suseda.
+Metóda podporných vektorov dosahuje výrazne lepšie výsledky ako metóda najbližších susedov.
+Najlepšie výsledky dosahuje pri 500 PCA komponentoch.
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=1\textwidth]{images/graph_features_compare}}
+\caption[Výsledky porovnania metód]{Graf porovnáva výsledky popísaných riešení s rôznymi parametrami a s využitím a taktiež bez využitia algortimu retinex.}
+\label{obr:graph_features_compare.png}
+\end{figure}
+
 \section{Porovnanie a diskusia}
+
+V porovnaní s publikovanými riešeniami pre tento dataset dosahujeme slabšie výsledky.
+Avšak ani najlepšie riešenia nedosahujú dostatočnú úspešnosť klasifikácie, pokiaľ sa riešenie aplikuje na odlišný dataset \cite{stateofart}.
+Pokiaľ chceme vytvoriť systém, ktorý by sa dal využiť na viacerých miestach, bude potrebné iné riešenie.
+
+Ďalšou zjavnou nevýhodou je klasifikácia do dopredu určeného počtu tried, čo prináša problémy bližšie popísané v nasledujúcej kapitole \ref{siam_class}.
+Ak by sme chceli riešenie využiť na sledovanie osôb v reálnom čase, riešenie je navyše pomalé.
+Extrakcia príznakov a ich následná klasifikácia zaberie na jednej snímke približe sekundu.
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=1\textwidth]{images/graph_duke_compare}}
+\caption[Výsledky publikovaných riešení v porovnaní s naším riešením]{Graf porovnáva úspešnosť klasifikácie nášho najlepšieho riešenie (zobrazeného červenou farbou) s ostatnými zverejnenými riešeniami \cite{stateofart}.}
+\label{obr:graph_duke_compare.png}
+\end{figure}
+
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=1\textwidth]{images/graph_duke_different}}
+\caption[Výsledky publikovaných riešení pri testovaní na odlišnom datasete]{Graf ukazuje úspešnosť klasifikácie riešení natrénovaných na datasete Market-1501 a testovaných na DukeMTMC-reID \cite{stateofart}.}
+\label{obr:graph_duke_different.png}
+\end{figure}

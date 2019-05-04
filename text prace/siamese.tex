@@ -43,7 +43,7 @@ $$d(p, q) \geq 0$$
 $$d(p, q) = 0 \Rightarrow p = q$$
 \end{description}
 
-\section{Klasifikácia}
+\section{Klasifikácia} \label{siam_class}
 Pri bežnej neurónovej sieti určenej priamo na klasifikáciu získame pre každý vstup triedu, do ktorej patrí.
 V prípade klasifikácie osôb budú triedami napríklad ich mená.
 Takýto prístup má niekoľko nevýhod.
@@ -79,13 +79,15 @@ do siete pre hľadanie podobnosti celých tiel sú farebné obrázky o veľkosti
 
 Sieť obsahuje štyri konvolučné vrstvy, ktoré majú postupne 64, 128, 128 a 256 filtrov s veľkosťami kernelu 10x10, 7x7, 4x4 a 4x4.
 Medzi nimi sa nachádzajú max pooling vrstvy, ktoré redukujú každú dimenziu na polovicu.
+
 Max pooling funguje nasledovne: vstupnú maticu rozdelí na regióny rovnakej veľkosti (v našom prípade 2x2). 
 Nová matica bude obsahovať len maximálne hodnoty v každom regióne.
 Po každej max pooling vrstve nasleduje dropout s pravdepodobnosťou 15\% aby sme predišli preučeniu \cite{JMLR:v15:srivastava14a}. 
-Ako aktivačné funkcie v konvolučných vrstvách využívame funkciu ReLU. 
-Výstupom tejto funkcie je jej vstupný vektor, v ktorom sú všetky záporné hodnoty nahradené 0.
 
-Po týchto vrstvách nasleduje plne-prepojená vrstva, jej výstupom je vektor o veľkosti 4096.
+Za každou konvolučnou vrstvou je vrstva ReLU. 
+Výstupom jej aktivačnej funkcie je jej vstupný vektor, v ktorom sú všetky záporné hodnoty nahradené 0.
+
+Po týchto spomenutých vrstvách nasleduje plne-prepojená vrstva, jej výstupom je vektor o veľkosti 4096.
 Takéto vektory vstupujú do ďalšej vrstvy dva, jeden z každej podsiete siamskej siete.
 Vypočítame manhattanovskú vzdialenosť medzi nimi a výslednú vzdialenosť pretransformujeme pomocou sigmoid funkcie $S(x) = \frac{1}{1 + e^-x}$ na hodnoty z intervalu <0, 1>, 
 kde jednotka značí maximálnu a nula minimálnu podobnosť vstupov do siete.
@@ -279,6 +281,7 @@ Výsledky klasifikácie do tried sme taktiež porovnali s modelom, ktorý vstup 
 
 \subsection{Diskusia}
 Z dosiahnutých výsledkov môžeme povedať, že oboje riešenia sa dajú využiť v systéme na sledovanie osoby vo viacerých záznamoch.
+Úspešnosť klasifikácie je síce nižšia ako pri riešenie z prechádzajúcej kapitoly, avšak je univerzálnejšie a nie je potrebné poznať počet tried, do ktorých chceme klasifikovať.
 Problémom, ktorý treba vyriešiť, však zostávajú falošné nezhody, ktoré sú pri prechode osoby medzi zábermi dvoch kamier a jej následnej reidentifikácii dôležité.
 Ich elimináciou by sme docielili správnu reidentifikáciu osoby na druhom zázname.
 Riešením by mohla byť kombinácia riešení navrhnutých v tejto kapitole.

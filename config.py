@@ -98,7 +98,8 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-1s: %(message)s",
     datefmt="%H:%M:%S")
 
-body_hog = False
+# 0 = NN, 1 = HOG, 2 = HAAR
+body_detect_method = False
 
 if production:
     learning_start = False
