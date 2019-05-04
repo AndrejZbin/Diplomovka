@@ -138,7 +138,7 @@ def _match_body(match):
     return match >= 0.80
 
 
-def compare_to_detected(candidate_track, saved_objects):
+def compare_to_detected(candidate_track, saved_objects, required_match_percent=config.required_match_percent):
 
     # for each saved object get all samples and compare them to candidate samples and average results,
     # then select the largest average match and return id of that object
@@ -176,7 +176,7 @@ def compare_to_detected(candidate_track, saved_objects):
             if config.confirm_match_count > 1:
                 largest_indices = np.argsort(-match)[:config.confirm_match_count]
             else:
-                largest_indices = (match >= config.required_match_count).nonzero()[0]
+                largest_indices = (match >= required_match_percent).nonzero()[0]
         else:
             largest_indices = [int(np.argmax(match))]
         for largest_index in largest_indices:
@@ -186,7 +186,7 @@ def compare_to_detected(candidate_track, saved_objects):
                 continue
             match_count = int(match[largest_index]*10000)/100.0
             # matching criteria
-            if match[largest_index] >= config.required_match_count or config.confirm_match:
+            if match[largest_index] >= required_match_percent or config.confirm_match:
                 logging.info('Matched {} to {} match {}%'.format(candidate_id, same_id, match_count))
                 if config.confirm_match:
                     if confirm_match(candidate_track, same_track):

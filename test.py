@@ -40,9 +40,9 @@ def print_rates(rates):
     print('Negative predictive value: {}'.format(npv))
 
 
-def test_body(model_file):
+def test_body(model_file, image_folder=config.test_body_folder):
     test_images = help_functions.load_all_images(
-        config.test_body_folder, preprocess=help_functions.prepare_body)
+        image_folder, preprocess=help_functions.prepare_body)
     model = get_body_model((config.body_image_resize[1], config.body_image_resize[0], 3))
     model.load_weights(filepath=model_file)
     print('body')
@@ -63,21 +63,25 @@ def test_body_oneshot(model_file, iterations=10, versus=4):
     matched = 0
     for i in range(iterations):
         inputs, targets = train_help_functions.get_oneshot_pair(test_images, versus)
+        if targets.shape[0] == 0:
+            continue
         result = model.predict_on_batch(inputs)
         matched += np.argmax(result) == np.argmax(targets)
     print('Oneshot body:', float(matched)/float(iterations), 'vs', versus)
     # print(versus, float(matched)/float(iterations))
 
 
-def test_face(model_file):
+def test_face(model_file, image_folder=config.chokepoint_cropped_test, file_type='.pgm'):
     test_images = help_functions.load_all_images(
-        config.chokepoint_cropped_test, file_type='.pgm', preprocess=help_functions.prepare_face)
+        image_folder, file_type=file_type, preprocess=help_functions.prepare_face)
     model = get_face_model((config.face_image_resize[1], config.face_image_resize[0], 1))
     model.load_weights(filepath=model_file)
     print('face')
     rates = np.array([0, 0, 0, 0])
     for i in range(100):
         inputs, targets = train_help_functions.get_image_pairs(test_images, 10)
+        if targets.shape[0] == 0:
+            continue
         predicted = model.predict_on_batch(inputs)
         rates += calc_rates(predicted, targets)
     print_rates(rates)

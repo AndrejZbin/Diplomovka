@@ -16,6 +16,7 @@ from players import *
 
 # saved information about detected people, key=ID, value=person_track instance
 tracked_objects = {}
+known_objects = {}
 # id from tracker -> id of person
 tracked_objects_reid = {}
 
@@ -56,10 +57,10 @@ def build_known_people():
             track = PersonTrack(track_id, n_cameras)
             track.reid()  # not necessary but good to have
             track.identify(name)
-            tracked_objects[track_id] = track
+            known_objects[track_id] = track
             name_to_id[name] = (track_id, count + 1)
         else:
-            track = tracked_objects.get(track_id, None)
+            track = known_objects.get(track_id, None)
 
         # distribute pictures to different cameras, but it doesn't really matter that much
         if match.group(1).lower() == 'f':  # face
@@ -131,6 +132,8 @@ def playback():
                 for (track_id, (x1, y1, x2, y2)) in detected_objects.items():
                     # should face and body samples be saved from the current frame?
                     should_sample = (frame_index % config.detect_frequency == 0)
+                    # should we try to find match for newly detected people with known people?
+                    should_reid_known = (frame_index % config.detect_frequency == 0) and len(known_objects) > 0
                     # should we try to find match for newly detected people?
                     should_reid = (frame_index % config.detect_frequency == 0)
                     # TODO: clear these checks
@@ -140,8 +143,15 @@ def playback():
                     if x2-x1 < 10 or y2 - y1 < 20:
                         continue
                     # convert from internal track_id to actual person_id
-                    track_id = tracked_objects_reid.get(track_id, track_id)
+                    while True:
+                        new_id = tracked_objects_reid.get(track_id, None)
+                        if new_id is None:
+                            break
+                        track_id = new_id
+
                     person_track = tracked_objects.get(track_id, None)
+                    if person_track is None:
+                        person_track = known_objects.get(track_id, None)
 
                     cropped_body = frame[y1:y2, x1:x2]
 
@@ -181,6 +191,7 @@ def playback():
                         # TODO: re-IDed person should be re-IDed again, because A1==A2 =never match= B1==B2
                         # don't re-ID people who were re-IDed before, so there are no cycles in detection
                         should_reid = should_reid and not person_track.was_reided()
+                        should_reid_known = should_reid_known and not person_track.is_known()
 
                     if should_sample:
                         person_track.add_body_sample(cropped_body, frame_index, camera_i)
@@ -188,11 +199,16 @@ def playback():
                         face = detect.get_face(cropped_body)
                         if face is not None:
                             person_track.add_face_sample(face, frame_index, camera_i)
+                    compare_to_array = []
+                    if should_reid_known:
+                        compare_to_array.append((known_objects, config.known_required_match_percent))
                     if should_reid:
-                        same_person_id = recognize.compare_to_detected(person_track, tracked_objects)
+                        compare_to_array.append((tracked_objects, config.required_match_percent))
+                    for compare_to, required_match in compare_to_array:
+                        same_person_id = recognize.compare_to_detected(person_track, compare_to, required_match)
                         if same_person_id is not None and same_person_id != track_id:
                             # get track of person we matched
-                            same_person_track = tracked_objects.get(same_person_id)
+                            same_person_track = compare_to.get(same_person_id)
                             # merge information
                             same_person_track.merge(person_track)
                             # we only need one track, the one that doesn't have less information
@@ -203,6 +219,7 @@ def playback():
                             track_id = same_person_id
                             person_track = same_person_track
                             person_track.reid()
+                            break
                         elif same_person_id == track_id:  # this is an error and should never happened :)
                             logging.error(
                                 'PLAYBACK: comparing and matching same person {}, something is wrong'.format(track_id))

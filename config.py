@@ -10,7 +10,12 @@ learning_start = False
 # improve improved model
 learning_improving = False
 
-build_dataset = True
+# how many images have to be set as matched to be a match
+required_match_percent = 0.25
+# how many images have to be set as matched to be a match
+known_required_match_percent = 0.10
+
+build_dataset = False
 
 playback_realtime = False
 
@@ -24,7 +29,8 @@ confirm_match = True
 confirm_match_count = 0
 
 n_cameras = 3
-cams_groups = [(['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1'], 'group1', 30)]
+cams_groups = [# (['P2E_S4_C1.1', 'P2E_S4_C2.1', 'P2E_S3_C3.1'], 'group1', 30),
+               (['P2E_S2_C1.2', 'P2E_S1_C2.2', 'P2E_S2_C3.2'], 'group2', 30)]
 
 
 # all folders
@@ -80,9 +86,6 @@ keep_track_targeted_files = 'known_people'
 centroid_max_distance = 200
 
 avoid_false_positives = False
-
-# how many images have to be set as matched to be a match
-required_match_count = 0.66
 
 keep_full_samples = True
 
