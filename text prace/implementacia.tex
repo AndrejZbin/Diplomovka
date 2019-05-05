@@ -83,41 +83,91 @@ V takomto prípade by algoritmus vyhodnotil, že sa jedná o tú istú osobu.
 Preto po každej detekcií porovnáme nájdenú osobu s osobou, ktorej identita je jej pridelená popísaným spôsobom.
 Pokiaľ sa nezhoduje, jedná sa o novú osobu.
 
-\section{Štruktúra projektu a jeho spustenie}
+\section{Štruktúra projektu}
 Uvázame krátky popis funkcionality súborov v projekte.
 \begin{description}
-\item[centroid\_tracker.py] tracker umožňujúci uchovanie ID pre osoby medzi jednotlivými snímkami videa
-\item[config.py] konfiguračné premenné
-\item[detect.py] funkcie pre detekciu postavy a tváre
+\item[centroid\_tracker.py] tracker umožňujúci uchovanie ID pre osoby medzi jednotlivými snímkami videa.
+\item[config.py] konfiguračné premenné.
+\item[detect.py] funkcie pre detekciu postavy a tváre.
 \item[download\_dataset.py] stiahne všetky nutné datasety a uloží ich do správneho formátu.
-\item[feature\_extractors.py] funkcie na extrakciu príznakov obrázku
-\item[feature\_test.py] testovanie extrahovaných príznakov
-\item[help\_functions.py] pomocné funkcie, ako je načítanie obrázkov a podobne
-\item[improve.py] umožnuje vylepšovať model na základe novo-získaných dát
-\item[person\_track.py] trieda obsahujúca informácie, na základne ktorých vieme osobu identifikovať
-\item[play.py] prehrávanie videa a detekcia/respoznávanie osôb v ňom
-\item[players.py] triedy umožňujúce rôzne formáty videa (obrázky, video, stream z kamery, video na youtube)
-\item[recognize.py] funkcie umožňujuce rozpoznanie osôb na videu
-\item[requirements.txt] nutné python knižnice
-\item[retinex.py] filter na úpravu obrázky (nie môj kód)
-\item[siamese\_network.py] siamska konvolučná neurónová sieť
-\item[test.py] testovanie natrénovaného modelu siamskej siete
-\item[train.py] trénovanie modelu siamskej siete
-\item[train\_help\_functions.py] pomocné funkcie na trénovanie (generovanie dát)
-\item[ChokePoint] obsahuje snímky datasetu ChokePoint, zložka je automaticky vytvorená
-\item[DukeMTMC-reID] obsahuje snímky datasetu DukeMTMC, zložka je automaticky vytvorená
-\item[known\_people] obsahuje snímky osôb, ktoré chceme na videozáznamoch hľadať
-\item[mobilenet\_ssd] obsahuje neurónovú sieť MobileNet-SSD
-\item[model\_history] obsahuje predtrénované modely na rozpoznávanie osôb
+\item[feature\_extractors.py] funkcie na extrakciu príznakov obrázku.
+\item[feature\_test.py] testovanie extrahovaných príznakov.
+\item[help\_functions.py] pomocné funkcie, ako je načítanie obrázkov a podobne.
+\item[improve.py] umožnuje vylepšovať model na základe novo-získaných dát.
+\item[improve\_test.py] testovanie vylepšeného modelu.
+\item[person\_track.py] trieda obsahujúca informácie, na základne ktorých vieme osobu identifikovať.
+\item[play.py] prehrávanie videa a detekcia/respoznávanie osôb v ňom.
+\item[players.py] triedy umožňujúce rôzne formáty videa (obrázky, video, stream z kamery, video na youtube).
+\item[recognize.py] funkcie umožňujuce rozpoznanie osôb na videu.
+\item[requirements.txt] nutné python knižnice.
+\item[retinex.py] filter na úpravu obrázky.
+\item[siamese\_network.py] siamska konvolučná neurónová sieť.
+\item[test.py] testovanie natrénovaného modelu siamskej siete.
+\item[train.py] trénovanie modelu siamskej siete.
+\item[train\_help\_functions.py] pomocné funkcie na trénovanie (generovanie dát).
+\item[ChokePoint] obsahuje snímky datasetu ChokePoint, zložka je automaticky vytvorená.
+\item[DukeMTMC-reID] obsahuje snímky datasetu DukeMTMC, zložka je automaticky vytvorená.
+\item[known\_people] obsahuje snímky osôb, ktoré chceme na videozáznamoch hľadať.
+\item[mobilenet\_ssd] obsahuje neurónovú sieť MobileNet-SSD.
+\item[model\_history] obsahuje predtrénované modely na rozpoznávanie osôb.
 \end{description}
 
-\section{Výsledky}
-WORK IN PROGRESS
 
-\subsection{Pred dotrénovaním}
+\section{Výsledky a diskusia}
+Zo záberov troch kamier z databázy ChokePoint sme vybudovali nový dataset. 
+Na tomto datasete sme siete na rozpoznávanie podľa tváre a postavy dotrénovali.
+Následne sme zobrali ďalšie zábery z tých istých kamier, na ktorých sa vyskytovali tie isté osoby v inom oblečení a aj nové, predtým nevidené osoby.
+Z týchto záberov sme opäť vybudovali dataset, na ktorom sme testovali rovnako, ako pri prvotnom trénovaní.
 
-\subsection{Popis dotrénovania}
+Môžeme si všimnúť, že presnosť siete na rozpoznávanie podľa postavy sa zlepšila, ale siete na rozpoznávanie podľa tváre nie.
+Je to spôsobené tým, že ak detegujeme osobu, najskôr detegujeme jej postavu a až následne tvár. 
+Avšak tvár nie vždy nájdeme. Preto môže byť vytvorený dataset menší, čo môže spôsobiť preučenie.
+Po preskúmaní datasetu sme však zistili, že detekcia tváre je niekedy nepresná a program uloží aj zábery, ktoré tvár nezachytávajú.
+Preto je potrebné dataset manuálne vyčistiť od týchto falošných detekcií pre dosiahnutie lepších výsledkov.
 
-\subsection{Po dotrénovaní}
+Napriek tomu však sledovanie osôb v zázname a taktiež aj hľadanie známych osôb podľa tváre aj postavy funguje.
+Tým, že kombinujeme dve riešenia a máme uložených viacero snímkov pre každú osobu, problém zaniká. 
+Na záberoch, na ktorých sme vykonali testovanie, program dokázal identifikovať všetky osoby správne.
+Jedná sa síce o krátky záznam, ale ukazuje, že náš systém je možné využiť na spoľahlivé sledovanie a vyhladávanie osôb.
 
-\subsection{Diskusia}
+\begin{figure}[H]
+\centerline{\includegraphics[width=1\textwidth]{images/graph_improve_face.png}}
+\caption[Priebeh doučenia hľadania podobnosti tvárí]{Priebeh doučenia hľadania podobnosti tvárí. Z grafu vidieť, že na dotrénovanie siete stačí malý počet iterácií.}
+\label{obr:graph_learn_face}
+\end{figure}
+
+
+\begin{table}[H]
+  \caption[Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa tváre]{Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa tváre.}
+  \label{tbl:dotrenovanie_tvar_tabulka}
+  \begin{center}
+  \includegraphics{images/dotrenovanie_tvar_tabulka}
+  \end{center}
+\end{table}
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=1\textwidth]{images/dotrenovanie_telo_graf}}
+\caption[Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa tváre]{Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa tváre.}
+\label{obr:dotrenovanie_tvar_graf}
+\end{figure}
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=1\textwidth]{images/graph_improve_body.png}}
+\caption[Priebeh doučenia hľadania podobnosti postáv]{Priebeh doučenia hľadania podobnosti postáv. Na dotrénovanie je potrebný opäť len malý počet iterácií.}
+\label{obr:graph_improve_body}
+\end{figure}
+
+
+\begin{table}[H]
+  \caption[Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa postavy]{Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa postavy.}
+  \label{tbl:dotrenovanie_telo_tabulka}
+  \begin{center}
+  \includegraphics{images/dotrenovanie_telo_tabulka}
+  \end{center}
+\end{table}
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=1\textwidth]{images/dotrenovanie_telo_graf}}
+\caption[Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa postavy]{Porovnanie úspešnosti zhôd pred a po dotrénovaní rozpoznávania podľa postavy.}
+\label{obr:dotrenovanie_telo_graf}
+\end{figure}

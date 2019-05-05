@@ -1,6 +1,6 @@
 \chapter{Extrakcia príznakov a ich klasifikácia}
 \label{kap:features}
-V kapitole ukážeme riešenie problému klasifikácie osôb na základne extrahovaných príznakov zo snímok celého tela týchto osôb.
+V kapitole ukážeme riešenie problému klasifikácie osôb na základne extrahovaných príznakov zo snímok celej postavy týchto osôb.
 Naše riešenie preberá niektoré myšlienky z práce Person Re-identification by Local Maximal OccurrenceRepresentation and Metric Learning \cite{featuresinspiration}, detaily riešenia sa však odlišujú.
 Ďalej porovnáme dve metódy klasifikácie: pomocou najbližších susedov a pomocou support vector machines.
 \section{Dataset}
@@ -165,7 +165,7 @@ Pr
 
 \subsection{Výsledky}
 Z výsledkov testovania vidieť, že využitie retinexu pri klasifikácii pomáha vo všetkých prípadoch.
-Metóda najbližších susedov dosahuje najlepšie výsledky pri 300 PCA komponentoch a hľadaní len jedného najbližšieho suseda.
+Metóda najbližších susedov dosahuje najlepšie výsledky pri 200 PCA komponentoch a hľadaní len jedného najbližšieho suseda.
 Metóda podporných vektorov dosahuje výrazne lepšie výsledky ako metóda najbližších susedov.
 Najlepšie výsledky dosahuje pri 500 PCA komponentoch.
 
